@@ -1,0 +1,9 @@
+#goal definition
+geometry_msgs/PoseStamped pose_obj_ref
+float64 scale_obj
+---
+#result definition
+bool success
+--- 
+#feedback definition
+std_msgs/String status

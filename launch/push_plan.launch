@@ -1,0 +1,6 @@
+<launch>
+    <!-- run planning server -->
+    <node name="push_plan" pkg="pushing" type="push_plan" output="screen" clear_params="true">
+        <remap from="joint_states" to="motoman/joint_states"/>
+    </node>
+</launch>
