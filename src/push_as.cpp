@@ -114,6 +114,7 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
     // create messages that are used to published feedback/result
     pushing::push_as_action_Feedback feedback;
     pushing::push_as_action_Result result;
+    ros::NodeHandle nh_param;
 
     feedback.status.data = "Calculating pose for push...";
 
@@ -163,7 +164,9 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
     T_O1C.translation().y() = o1c_pose.pose.position.y;
     T_O1C.translation().z() = o1c_pose.pose.position.z;
 
-    /* Calling push plan action server */
+    /********************************************************
+     *            Calling push plan action server
+    *********************************************************/
     feedback.status.data = "Calling plan push action server...";
     actionlib::SimpleActionClient<pushing::push_plan_action_Action> push_plan_ac("pushing_planner", true);
 
@@ -177,6 +180,10 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
     push_plan_ac.sendGoalAndWait(goal_push_plan);
     // ROS_INFO_STREAM(push_plan_ac.getResult()->success);
 
+
+    /********************************************************
+     *            Calling tracking plan action server
+    *********************************************************/
     if (push_plan_ac.getResult()->success)
     {
         ROS_INFO_STREAM("Calculating new pose obj to tracker...");
@@ -213,9 +220,13 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
         visp_tracking::tracking_mode_Goal goal_tracker;
 
         /* First scale cad model in wrl file */
-        std::string model_color = "banana2_centered_46_88_vrt_fc";
-        std::string extension_file = ".wrl";
-        std::string folder_file = "/home/workstation/dope_ros_ws/src/visp_tracking/src/generic-rgbd/model/banana_6/source/banana/46_88/";
+        std::string model_color;
+        std::string extension_file;
+        std::string folder_file;
+
+        nh_param.getParam("/push_as/model_color", model_color);
+        nh_param.getParam("/push_as/extension_file", extension_file);
+        nh_param.getParam("/push_as/folder_file", folder_file);
 
         std::cout << "Replacing string..." << std::endl;
         std::string replace = "  scale 1 1 1";
@@ -224,12 +235,20 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
         modify_wrl(model_color, extension_file, folder_file, replace, replace_with);
         std::cout << "Replaced string..." << std::endl;
 
-        goal_tracker.use_depth = false;
-        goal_tracker.use_edges = true;
-        goal_tracker.use_ktl = true;
-        goal_tracker.path_wrl = folder_file + model_color + extension_file; //"/home/workstation/dope_ros_ws/src/visp_tracking/src/generic-rgbd/model/banana_6/source/banana/46_88/banana2_centered_46_88_vrt_fc.wrl";
+        bool use_edges = true;
+        bool use_klt = true;
+        bool use_depth = false;
+        
+        nh_param.getParam("/push_as/use_edges", use_edges);
+        nh_param.getParam("/push_as/use_klt", use_klt);
+        nh_param.getParam("/push_as/use_depth", use_depth);
+
+        goal_tracker.use_depth = use_depth;
+        goal_tracker.use_edges = use_edges;
+        goal_tracker.use_ktl = use_depth;
+        goal_tracker.path_wrl = folder_file + model_color + extension_file; 
         goal_tracker.initial_pose = tracker_init_pose;
-        /* Tracker activate */
+ 
         ac_tracking.sendGoal(goal_tracker);
         // ROS_INFO_STREAM(ac_tracking.getResult()->success);
     }

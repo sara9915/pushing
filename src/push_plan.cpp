@@ -212,14 +212,6 @@ bool executeCB(const pushing::push_plan_action_GoalConstPtr &goal, actionlib::Si
     pre_push_stamped.header.frame_id = "base_link";
     pre_push_stamped.header.stamp = ros::Time::now();
 
-    while (i < 10)
-    {
-        push_pub.publish(pre_push_stamped);
-        i++;
-        loop_rate.sleep();
-    }
-    i = 0;
-
     ROS_INFO_STREAM("--- pre_push pose --- "
                     << "\n"
                     << pre_push);
@@ -245,7 +237,15 @@ bool executeCB(const pushing::push_plan_action_GoalConstPtr &goal, actionlib::Si
     {
         std::cout << "Press Enter to Continue";
         std::cin.ignore();
-        push.position.z = push.position.z + 0.015;
+        push.position.z = push.position.z + 0.03;
+        push.position.y = push.position.y + 0.05;
+        while (i < 10)
+        {
+            push_pub.publish(goal->push_pose);
+            i++;
+            loop_rate.sleep();
+        }
+        i = 0;
 
         ROS_INFO_STREAM("--- Push pose ---"
                         << "\n"
