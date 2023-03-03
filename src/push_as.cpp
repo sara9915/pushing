@@ -224,9 +224,9 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
         modify_wrl(model_color, extension_file, folder_file, replace, replace_with);
         std::cout << "Replaced string..." << std::endl;
 
-        goal_tracker.use_depth = true;
-        goal_tracker.use_edges = false;
-        goal_tracker.use_ktl = false;
+        goal_tracker.use_depth = false;
+        goal_tracker.use_edges = true;
+        goal_tracker.use_ktl = true;
         goal_tracker.path_wrl = folder_file + model_color + extension_file; //"/home/workstation/dope_ros_ws/src/visp_tracking/src/generic-rgbd/model/banana_6/source/banana/46_88/banana2_centered_46_88_vrt_fc.wrl";
         goal_tracker.initial_pose = tracker_init_pose;
         /* Tracker activate */

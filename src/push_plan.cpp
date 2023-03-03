@@ -245,6 +245,7 @@ bool executeCB(const pushing::push_plan_action_GoalConstPtr &goal, actionlib::Si
     {
         std::cout << "Press Enter to Continue";
         std::cin.ignore();
+        push.position.z = push.position.z + 0.015;
 
         ROS_INFO_STREAM("--- Push pose ---"
                         << "\n"
