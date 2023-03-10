@@ -17,11 +17,37 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib
   geometry_msgs
   grasp_dope
+  std_msgs
+  sensor_msgs
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 find_package(Eigen3 REQUIRED)
+
+set(GUROBI_HOME "/opt/gurobi1001/linux64")
+set(GUROBI_INCLUDE_DIR "${GUROBI_HOME}/include")
+set(LD_LIBRARY_PATH "${LD_LIBRARY_PATH}:${GUROBI_HOME}/lib")
+set(GRB_LICENSE_FILE "/home/workstation/gurobi.lic")
+# find_package(GUROBI REQUIRED)
+
+
+
+find_library( GUROBI_LIBRARY 
+              NAMES gurobi100
+              PATHS "${GUROBI_HOME}/lib" 
+              )
+
+find_library( GUROBI_CXX_LIBRARY 
+              NAMES gurobi_c++
+              PATHS "${GUROBI_HOME}/lib" 
+              )
+              # 
+set(GUROBI_LIBRARIES "${GUROBI_CXX_LIBRARY};${GUROBI_LIBRARY}" )
+
+message("GUROBI_LIBRARIES: ")
+message(${GUROBI_LIBRARIES} )
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -72,12 +98,16 @@ add_action_files(
   FILES
   push_plan_action_.action
   push_as_action_.action
+  plane_command_.action
 )
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
-  std_msgs actionlib_msgs geometry_msgs
+  std_msgs 
+  actionlib_msgs 
+  geometry_msgs
+  sensor_msgs
 )
 
 ################################################
@@ -110,20 +140,26 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
 #  LIBRARIES pushing
-   CATKIN_DEPENDS moveit_ros_planning_interface grasp_dope roscpp tf2 tf2_ros visp_tracking message_runtime actionlib_msgs geometry_msgs
+   CATKIN_DEPENDS moveit_ros_planning_interface grasp_dope roscpp tf2 tf2_ros visp_tracking message_runtime actionlib_msgs geometry_msgs std_msgs
 #  DEPENDS system_lib
 )
 
 ###########
 ## Build ##
 ###########
+message("GUROBI_INCLUDE_DIRS: ")
+message(${GUROBI_INCLUDE_DIR})
+message("GUROBI_LIB: ")
+message(${GUROBI_CXX_LIBRARY})
+message(${GUROBI_LIBRARY})
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
+  ${GUROBI_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -143,6 +179,9 @@ include_directories(
 add_executable(push_plan src/push_plan.cpp)
 add_executable(push_as src/push_as.cpp)
 add_executable(demo_push_tracker src/demo_push_tracker.cpp)
+add_executable(converter_tracker_fom src/converter_tracker_fom.cpp)
+add_executable(plane_command_robot_as src/plane_command_robot_as.cpp)
+add_executable(push_control src/fom_push/main.cpp src/fom_push/OptProgram.cpp src/fom_push/helper.cpp src/fom_push/Push.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -163,6 +202,19 @@ target_link_libraries(push_as
 )
 target_link_libraries(demo_push_tracker
   ${catkin_LIBRARIES}
+)
+target_link_libraries(converter_tracker_fom
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(plane_command_robot_as
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(push_control
+  ${catkin_LIBRARIES}
+  ${GUROBI_LIBRARIES}
+  libjsoncpp.a
+  # ${GUROBI_CXX_LIBRARY}
+  # ${GUROBI_LIBRARY}
 )
 
 #############

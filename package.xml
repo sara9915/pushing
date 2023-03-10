@@ -70,6 +70,10 @@
   <depend>actionlib_msgs</depend>
   <depend>grasp_dope</depend>
 
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+
+
 
 
   <!-- The export tag contains other, unspecified, tags -->

@@ -237,8 +237,8 @@ bool executeCB(const pushing::push_plan_action_GoalConstPtr &goal, actionlib::Si
     {
         std::cout << "Press Enter to Continue";
         std::cin.ignore();
-        push.position.z = push.position.z + 0.03;
-        push.position.y = push.position.y + 0.05;
+        push.position.z = push.position.z + 0.01;
+        push.position.y = push.position.y + 0.04;
         while (i < 10)
         {
             push_pub.publish(goal->push_pose);

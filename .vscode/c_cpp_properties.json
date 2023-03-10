@@ -1,0 +1,36 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/workstation/dope_ros_ws/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/workstation/dope_ros_ws/src/grasp_dope/include/**",
+        "/home/workstation/dope_ros_ws/src/sun_yaskawa_ros/motoman_driver/include/**",
+        "/home/workstation/dope_ros_ws/src/pushing/include/**",
+        "/home/workstation/dope_ros_ws/src/serial/include/**",
+        "/home/workstation/dope_ros_ws/src/slipping_control/slipping_control_common/include/**",
+        "/home/workstation/dope_ros_ws/src/sun_helper_lib/include/**",
+        "/home/workstation/dope_ros_ws/src/sun_learning_lib/include/**",
+        "/home/workstation/dope_ros_ws/src/sun_math_toolbox/include/**",
+        "/home/workstation/dope_ros_ws/src/sun_robot_lib/include/**",
+        "/home/workstation/dope_ros_ws/src/sun_robot_ros/sun_robot_ros/include/**",
+        "/home/workstation/dope_ros_ws/src/sun_systems_lib/include/**",
+        "/home/workstation/dope_ros_ws/src/sun_traj_lib/include/**",
+        "/home/workstation/dope_ros_ws/src/sun_yaskawa_ros/sun_yaskawa_nodes/include/**",
+        "/home/workstation/dope_ros_ws/src/visp_tracking/include/**",
+        "/home/workstation/dope_ros_ws/src/wsg32-ros-pkg/wsg_32_driver/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

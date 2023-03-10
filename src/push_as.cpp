@@ -146,7 +146,7 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
     push_pose.pose.position = goal->pose_obj_ref.pose.position;
     if(rot_pose_obj_ref(1,1)>0)
     {
-        push_pose.pose.position.y = push_pose.pose.position.y + 0.05;
+        push_pose.pose.position.y = push_pose.pose.position.y+0.01;
     }
     push_pose.pose.orientation.w = q_PB.w();
     push_pose.pose.orientation.x = q_PB.x();
@@ -182,7 +182,7 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
 
 
     /********************************************************
-     *            Calling tracking plan action server
+     *            Calling tracking action server
     *********************************************************/
     if (push_plan_ac.getResult()->success)
     {
