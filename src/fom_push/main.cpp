@@ -56,31 +56,31 @@ void updateJson(const double &_x_tcp, const double &_y_tcp, const double &x_tcp,
     }
 }
 */
-bool getMPCPose(const geometry_msgs::Pose2D::ConstPtr &mpc_pose, MatrixXd *q_slider)
+
+bool getMPCPose(const geometry_msgs::Pose2D::ConstPtr &mpc_pose, MatrixXd *q_slider, bool *has_mpc_pose)
 {
-    *q_slider << mpc_pose->x, mpc_pose->y, mpc_pose->theta;
+    *q_slider << mpc_pose->x, mpc_pose->y, mpc_pose->theta*180/M_PI;
+    *has_mpc_pose = true;
     return true;
 }
 
-bool getRobotPose(MatrixXd &q_pusher)
+bool getRobotPose(MatrixXd &q_pusher, tf::TransformListener &listener)
 {
-    tf::TransformListener listener;
     tf::StampedTransform transform;
-
     try
     {
-        listener.waitForTransform("/push_frame", "/base_link", ros::Time(0), ros::Duration(3.0));
-        listener.lookupTransform("/push_frame", "/base_link",
+        listener.waitForTransform("/base_link", "/push_frame", ros::Time(0), ros::Duration(3.0));
+        listener.lookupTransform("/base_link", "/push_frame",
                                  ros::Time(0), transform);
+        q_pusher(0) = transform.getOrigin().getX();
+        q_pusher(1) = transform.getOrigin().getY();
     }
     catch (tf::TransformException ex)
     {
         ROS_ERROR("%s", ex.what());
         ros::Duration(1.0).sleep();
+        return false;
     }
-
-    q_pusher(0) = transform.getOrigin().getX();
-    q_pusher(1) = transform.getOrigin().getY();
 
     return true;
 }
@@ -91,7 +91,6 @@ int main(int argc, char *argv[])
     //~Ros parameters---------------------------------------------------------------------------------------
     ros::init(argc, argv, "push_control");
     ros::NodeHandle n;
-    tf::TransformListener listener;
 
     //********Define Local Variables-------------------------------------------------------------------------
     // Mutex
@@ -143,22 +142,24 @@ int main(int argc, char *argv[])
     thread_data_array[0]._delta_xMPC = &delta_xMPC;
 
     // Subscriber
-    ros::Subscriber mpc_pose_sub = n.subscribe<geometry_msgs::Pose2D>("/mpc_pose", 1, boost::bind(&getMPCPose, _1, &q_slider));
+    tf::TransformListener listener;
+    ros::Subscriber mpc_pose_sub = n.subscribe<geometry_msgs::Pose2D>("/mpc_pose", 1, boost::bind(&getMPCPose, _1, &q_slider, &has_mpc_pose));
 
     pushing::plane_command_Goal goal_plane_command;
 
     //-------------------------------------------------------------------------------------------------------------------------------
     // Check Tracker and Robot
     std::cout << "Check tracker and robot state..." << std::endl;
+    ros::Rate read_mpc_pose_rate(100);
+    while (!has_robot && ros::ok())
+    {
+        has_robot = getRobotPose(q_pusher, listener);
+    }
     while (!has_mpc_pose && ros::ok())
     {
-        if (mpc_pose_sub.getNumPublishers() > 0)
-        {
-            ros::spinOnce();
-            has_mpc_pose = true;
-        }
+        ros::spinOnce();
+        read_mpc_pose_rate.sleep();
     }
-    has_robot = getRobotPose(q_pusher);
 
     // Print q_pusher and q_slider
     std::cout << "q_pusher" << endl;
@@ -167,13 +168,16 @@ int main(int argc, char *argv[])
     std::cout << q_slider << endl;
     //  return 0;
 
+    // Create Action Client robot commands
+    actionlib::SimpleActionClient<pushing::plane_command_Action> plane_command_ac("plane_command_robot", true);
+
     // Create Thread------------------------------------------------------------------------------------------------------
     pthread_create(&rriThread, &attrR, rriMain, (void *)&thread_data_array[0]);
 
     // Loop (Give time to thread to initialize)-------------------------------------------------------------------
     for (int i = 0; i < 1000; i++)
     {
-        std::cout << " In Second loop " << i << std::endl;
+        // std::cout << " In Second loop " << i << std::endl;
         usleep(4e3);
     }
 
@@ -196,7 +200,7 @@ int main(int argc, char *argv[])
 
         ros::spinOnce(); // getMPCPose
         printf("q_slider %f %f %f \n", q_slider(0), q_slider(1), q_slider(2));
-        getRobotPose(q_pusher);
+        getRobotPose(q_pusher, listener);
         // Assign local variables
         _q_slider = q_slider;
         _q_pusher = q_pusher;
@@ -206,7 +210,6 @@ int main(int argc, char *argv[])
         TimeGlobal = time;
         x_tcp = q_pusher(0);
         y_tcp = q_pusher(1);
-
         pthread_mutex_unlock(&nonBlockMutex);
 
         // Position Control Parameters --------------------------------------------------------------------------------------------------
@@ -220,6 +223,7 @@ int main(int argc, char *argv[])
             {
                 vipi(0) = 0;
                 vipi(1) = 0;
+                std::cout << " vipi = 0 " << std::endl;
             }
             else
             {
@@ -234,18 +238,21 @@ int main(int argc, char *argv[])
             x_tcp = x_tcp + h * vbpi(0); // x robot position in base frame
             y_tcp = y_tcp + h * vbpi(1); // y robot position in base frame
 
-            //updateJson(_x_tcp, _y_tcp, x_tcp, y_tcp, _q_slider, _u_control, _delta_uMPC, _delta_xMPC, vipi);
+            std::cout << "--------------------" << std::endl;
+            std::cout << "x_tcp: " << x_tcp << std::endl;
+            std::cout << "y_tcp: " << y_tcp << std::endl;
+            std::cout << "u_control: " << _u_control << std::endl;
+            std::cout << "--------------------" << std::endl;
+
+            // updateJson(_x_tcp, _y_tcp, x_tcp, y_tcp, _q_slider, _u_control, _delta_uMPC, _delta_xMPC, vipi);
         }
 
         /********************************************************
          *            Calling plane command action server
          *********************************************************/
-        actionlib::SimpleActionClient<pushing::plane_command_Action> plane_command_ac("plane_command_robot", true);
-
         goal_plane_command.pusher_position.x = x_tcp;
         goal_plane_command.pusher_position.y = y_tcp;
         plane_command_ac.sendGoal(goal_plane_command);
-
 
         r.sleep();
     }

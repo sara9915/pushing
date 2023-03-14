@@ -6,7 +6,6 @@ using Eigen::MatrixXd;
 Push::Push(int _Family) : // Constructor of Push Class  //peterkty: put the initialization of member variable here
 						  env(), model(env), lhs(0)
 {
-
 	// Set size of Matrices
 	Ain.resize(NUM_CONSTRAINTS, NUM_VARIABLES);
 	bin.resize(NUM_CONSTRAINTS, 1);
@@ -18,53 +17,49 @@ Push::Push(int _Family) : // Constructor of Push Class  //peterkty: put the init
 	solutionX.resize(NUM_XVARIABLES * NUM_STEPS, 1);
 
 	// Initialize scalars
-	a = 0.09; 						//length of slider [m]
-	b = a; 							// width of slider [m]
-	c_ls = 0.036742346141748;		// c = mmax/fmax (CREATE FUNCTION TO CALCULATE IT)
-	h_opt = 0.03; 					// sample time [s] for optimization
-	rx = -a / 2.0;					// point of contact 
-	nu_p = 0.3; 					//coefficient of friction (pusher-slider)
+	a = 0.09;				  // length of slider [m]
+	b = a;					  // width of slider [m]
+	c_ls = 0.036742346141748; // c = mmax/fmax (CREATE FUNCTION TO CALCULATE IT)
+	h_opt = 0.03;			  // sample time [s] for optimization
+	rx = -a / 2.0;			  // point of contact
+	nu_p = 0.3;				  // coefficient of friction (pusher-slider)
 	Family = _Family;
 
 	ReadMatrices();
+	std::cout << "read matrices" << std::endl;
 	SetEquationSense();
+	std::cout << "sense equation" << std::endl;
 	SetVariableType();
+	std::cout << "set variable" << std::endl;
 	BuildModel();
+	std::cout << "build model" << std::endl;
 }
 //*******************************************************************************************
 void Push::ReadMatrices()
 {
-	Json::Value root;
-	Json::Reader reader;
 	// Load Json file
-	//  ifstream file("/home/mcube/cpush/catkin_ws/src/push_control/src_QS/Data/Matrices.json");
-	ifstream file("/home/mcube/cpush/catkin_ws/src/push_control/src_QS/Data/MatricesTarget2.json");
+	ifstream file("/home/workstation/dope_ros_ws/src/pushing/mpc_parameters/Matrices_copy.json", std::ifstream::binary);
+	Json::Value root;
 	file >> root;
-	string Ain_string;
-	string bin_string;
+
+	// std::string Ain_string;
+	// std::string bin_string;
 	if (Family == 1)
 	{
-		Ain_string = "Ain1";
-		bin_string = "bin1";
+		write_matrix_JSON(root["Matrices"]["Ain1"], Ain);
+		write_matrix_JSON(root["Matrices"]["bin1"], bin);
 	}
 	else if (Family == 2)
 	{
-		Ain_string = "Ain2";
-		bin_string = "bin2";
+		write_matrix_JSON(root["Matrices"]["Ain2"], Ain);
+		write_matrix_JSON(root["Matrices"]["bin2"], bin);
 	}
 	else
 	{
-		Ain_string = "Ain3";
-		bin_string = "bin3";
+		write_matrix_JSON(root["Matrices"]["Ain3"], Ain);
+		write_matrix_JSON(root["Matrices"]["bin3"], bin);
 	}
-	write_matrix_JSON(root["Matrices"][Ain_string], Ain);
-	write_matrix_JSON(root["Matrices"][bin_string], bin);
 	write_matrix_JSON(root["Matrices"]["Q"], Q);
-	//~ cout<<Ain<<endl;
-	//~ cout<<bin<<endl;
-	//~ cout<<" "<<endl;
-	//~ write_matrix_JSON(root["Matrices"]["Aeq"], Aeq);
-	//~ write_matrix_JSON(root["Matrices"]["beq"], beq);
 }
 //*******************************************************************************************
 void Push::SetEquationSense()
@@ -169,43 +164,43 @@ double Push::OptimizeModel()
 void Push::UpdateICModel(double time, MatrixXd q_slider, MatrixXd q_pusher)
 {
 	//----------------Find delta_x: Trajectory Tracking-----------------------------------
-	
-	 //Uncomment this part for trajectory tracking mode
-	 //Find desired state
-	 double FlagStick=0;
-	 MatrixXd x_des(4,1);
-	 x_des(0) = (time-1)*0.05;
-	 x_des(1) = 0.0;
-	 x_des(2) = 0;
-	 x_des(3) = 0;
-	 //Find position d
-	 MatrixXd ripi(2,1);
-	 MatrixXd ribi(2,1);
-	 MatrixXd ripb(2,1);
-	 MatrixXd rbpb(2,1);
-	 MatrixXd Cbi(2,2);
-	 double theta = q_slider(2);
-	 double rx, ry;
-	 Cbi<< cos(theta), sin(theta), -sin(theta), cos(theta);
-	 ripi<<q_pusher(0),q_pusher(1);
-	 ribi<<q_slider(0),q_slider(1);
-	 ripb = ripi-ribi;
-	 rbpb = Cbi*ripb;
-	 // rx = rbpb(0);
-	 rx = -a/2;
-	 ry = rbpb(1);
-	 printf("rx, ry: %f %f \n", rx, ry);
-	 //Find delta_x
-	 MatrixXd delta_x(4,1);
-	 MatrixXd x_state(4,1);
-	 x_state<<q_slider,ry;
-	 delta_x=x_state-x_des;
-	 cout<< "delta_x"<<endl;
-	 cout<< delta_x<<endl;
-	 cout<< "q_slider"<<endl;
-	 cout<< q_slider<<endl;
-	 // cout<< "rbpb"<<endl;
-	 cout<< rbpb<<endl;
+
+	// Uncomment this part for trajectory tracking mode
+	// Find desired state
+	double FlagStick = 0;
+	MatrixXd x_des(4, 1);
+	x_des(0) = (time - 1) * 0.05;
+	x_des(1) = 0.0;
+	x_des(2) = 0;
+	x_des(3) = 0;
+	// Find position d
+	MatrixXd ripi(2, 1);
+	MatrixXd ribi(2, 1);
+	MatrixXd ripb(2, 1);
+	MatrixXd rbpb(2, 1);
+	MatrixXd Cbi(2, 2);
+	double theta = q_slider(2);
+	double rx, ry;
+	Cbi << cos(theta), sin(theta), -sin(theta), cos(theta);
+	ripi << q_pusher(0), q_pusher(1);
+	ribi << q_slider(0), q_slider(1);
+	ripb = ripi - ribi;
+	rbpb = Cbi * ripb;
+	// rx = rbpb(0);
+	rx = -a / 2;
+	ry = rbpb(1);
+	//printf("rx, ry: %f %f \n", rx, ry);
+	// Find delta_x
+	MatrixXd delta_x(4, 1);
+	MatrixXd x_state(4, 1);
+	x_state << q_slider, ry;
+	delta_x = x_state - x_des;
+	// cout << "delta_x" << endl;
+	// cout << delta_x << endl;
+	// cout << "q_slider" << endl;
+	// cout << q_slider << endl;
+	// // cout<< "rbpb"<<endl;
+	// cout << rbpb << endl;
 
 	//----------------Find delta_x: Target Tracking-----------------------------------
 
@@ -313,7 +308,7 @@ void Push::UpdateICModel(double time, MatrixXd q_slider, MatrixXd q_pusher)
 	MatrixXd bin2(1, 1);
 
 	// Define u_star
-	u_star << 0.05, 0; //nominal input 
+	u_star << 0.05, 0;		  // nominal input
 	f_star1 << 0.05, 0, 0, 0; // f1(x_star(t0),u_star(t0)) as in (8)
 	f_star2 << 0.05, 0.015, -0.5, -0.0375;
 	f_star3 << 0.05, -0.015, 0.5, 0.0375;

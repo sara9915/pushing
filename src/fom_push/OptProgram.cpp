@@ -9,6 +9,7 @@ using Eigen::MatrixXd;
 //********************************************************************
 void *rriMain(void *thread_arg)
 {
+    std::cout << "START THREAD" << std::endl;
     struct thread_data *my_data;
     my_data = (struct thread_data *)thread_arg;
 
@@ -29,6 +30,7 @@ void *rriMain(void *thread_arg)
 
     pthread_mutex_unlock(&nonBlockMutex);
 
+
     //~ //Define local variables
 
     double fval1; // cost function evaluate for sticking
@@ -45,11 +47,12 @@ void *rriMain(void *thread_arg)
     MatrixXd fval(3, 1);       //[fval1 fval2 fval3]
     MatrixXd _q_slider_(3, 1); //[x y theta]
     MatrixXd _q_pusher_(2, 1); //[rx ry]
-
+ 
     // Define object for 3 family of modes
     Push *pStick;
     Push *pUp;
     Push *pDown;
+    //std::cout << "defining Stick" << std::endl;
     pStick = new Push(1);
     pUp = new Push(2);
     pDown = new Push(3);
@@ -57,12 +60,14 @@ void *rriMain(void *thread_arg)
     Push &Up = *pUp;
     Push &Down = *pDown;
     int FlagStick;
+    //std::cout << "before loop" << std::endl;
 
     //**********************************************************************
     //************************ Begin Loop **********************************
     //**********************************************************************
     while (time < 50000 && ros::ok())
     {
+        // std::cout << "loop control time: " << time << std::endl;
         if (time == 0)
         {
             t_ini = gettime();
@@ -113,24 +118,27 @@ void *rriMain(void *thread_arg)
             u_control = Stick.delta_u;
             delta_uMPC = Stick.solutionU;
             delta_xMPC = Stick.solutionX;
+            // std::cout << " Sticking " << std::endl;
         }
         else if (minIndex == 1)
         {
             u_control = Up.delta_u;
             delta_uMPC = Up.solutionU;
             delta_xMPC = Up.solutionX;
+            // std::cout << " Sliding Up " << std::endl;
         }
         else
         {
             u_control = Down.delta_u;
             delta_uMPC = Down.solutionU;
             delta_xMPC = Down.solutionX;
+            // std::cout << " Sliding down " << std::endl;
         }
-        cout << "u_control" << endl;
-        cout << u_control << endl;
+        // cout << "u_control" << endl;
+        // cout << u_control << endl;
 
         pthread_mutex_unlock(&nonBlockMutex);
-        
+
         // Remove Contraints
         Stick.RemoveConstraints();
         Up.RemoveConstraints();

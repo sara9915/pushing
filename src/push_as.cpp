@@ -126,10 +126,19 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
         return success;
     }
 
-    Eigen::Quaterniond q_pose_obj_ref(goal->pose_obj_ref.pose.orientation.x,goal->pose_obj_ref.pose.orientation.y, goal->pose_obj_ref.pose.orientation.z, goal->pose_obj_ref.pose.orientation.w);
+    Eigen::Quaterniond q_pose_obj_ref(goal->pose_obj_ref.pose.orientation.x, goal->pose_obj_ref.pose.orientation.y, goal->pose_obj_ref.pose.orientation.z, goal->pose_obj_ref.pose.orientation.w);
     Eigen::Matrix3d rot_pose_obj_ref;
     rot_pose_obj_ref = q_pose_obj_ref.toRotationMatrix();
 
+    std::string object_name;
+    ros::param::get("/dope/object_of_interest", object_name);
+    const std::string cad_string = "/dope/dimensions/" + object_name;
+    std::vector<double> cad_dims;
+    cad_dims.resize(3);
+    ros::param::get(cad_string, cad_dims);
+    ROS_INFO_STREAM(cad_dims.at(0) << ", " << cad_dims.at(1) << ", " << cad_dims.at(2));
+    
+    for(int c = 0; c < 3; c++) cad_dims.at(c) = cad_dims.at(c) * 0.01 * goal->scale_obj;
     Eigen::Matrix3d rotation_PB;
     rotation_PB << 1, 0, 0,
         0, 0, -1,
@@ -144,9 +153,12 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
     push_pose.header.stamp = ros::Time::now();
     push_pose.header.frame_id = "base_link";
     push_pose.pose.position = goal->pose_obj_ref.pose.position;
-    if(rot_pose_obj_ref(1,1)>0)
+    std::cout << "value to enter in if: " << rot_pose_obj_ref(1,1) << std::endl;
+
+
+    if (rot_pose_obj_ref(1, 1) > 0)
     {
-        push_pose.pose.position.y = push_pose.pose.position.y+0.01;
+        push_pose.pose.position.y = push_pose.pose.position.y + cad_dims.at(0);
     }
     push_pose.pose.orientation.w = q_PB.w();
     push_pose.pose.orientation.x = q_PB.x();
@@ -166,7 +178,7 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
 
     /********************************************************
      *            Calling push plan action server
-    *********************************************************/
+     *********************************************************/
     feedback.status.data = "Calling plan push action server...";
     actionlib::SimpleActionClient<pushing::push_plan_action_Action> push_plan_ac("pushing_planner", true);
 
@@ -180,10 +192,9 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
     push_plan_ac.sendGoalAndWait(goal_push_plan);
     // ROS_INFO_STREAM(push_plan_ac.getResult()->success);
 
-
     /********************************************************
      *            Calling tracking action server
-    *********************************************************/
+     *********************************************************/
     if (push_plan_ac.getResult()->success)
     {
         ROS_INFO_STREAM("Calculating new pose obj to tracker...");
@@ -238,7 +249,7 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
         bool use_edges = true;
         bool use_klt = true;
         bool use_depth = false;
-        
+
         nh_param.getParam("/push_as/use_edges", use_edges);
         nh_param.getParam("/push_as/use_klt", use_klt);
         nh_param.getParam("/push_as/use_depth", use_depth);
@@ -246,9 +257,9 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
         goal_tracker.use_depth = use_depth;
         goal_tracker.use_edges = use_edges;
         goal_tracker.use_ktl = use_depth;
-        goal_tracker.path_wrl = folder_file + model_color + extension_file; 
+        goal_tracker.path_wrl = folder_file + model_color + extension_file;
         goal_tracker.initial_pose = tracker_init_pose;
- 
+
         ac_tracking.sendGoal(goal_tracker);
         // ROS_INFO_STREAM(ac_tracking.getResult()->success);
     }

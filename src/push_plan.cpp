@@ -238,7 +238,7 @@ bool executeCB(const pushing::push_plan_action_GoalConstPtr &goal, actionlib::Si
         std::cout << "Press Enter to Continue";
         std::cin.ignore();
         push.position.z = push.position.z + 0.01;
-        push.position.y = push.position.y + 0.04;
+        push.position.y = push.position.y + 0.02;
         while (i < 10)
         {
             push_pub.publish(goal->push_pose);
@@ -252,7 +252,8 @@ bool executeCB(const pushing::push_plan_action_GoalConstPtr &goal, actionlib::Si
                         << push);
 
         /* Planning to grasp pose */
-        start_state.setFromIK(joint_model_group, get_tool_pose(pre_push));
+        // start_state.setFromIK(joint_model_group, get_tool_pose(pre_push));
+        start_state.setJointGroupPositions(joint_model_group, plan_pre_push.trajectory_.joint_trajectory.points.back().positions);
         move_group_interface->setStartState(start_state);
 
         plan_push = planning_cartesian(get_tool_pose(push), *move_group_interface);
