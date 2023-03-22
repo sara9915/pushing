@@ -93,6 +93,19 @@ void write_matrix_JSON(Json::Value root, MatrixXd &A)
 }
 
 //***************************************
+//This method is used to read row vector from JSON and copy it in a column vector
+void write_matrix_JSON_index(Json::Value root, MatrixXd &A, int num_rows, int num_cols)
+{
+	for (int i = 0; i < num_rows; i++)
+	{
+		for (int j = 0; j < num_cols; j++)
+		{
+			A(i, j) = root[j][i].asDouble();
+		}
+	}
+}
+
+//***************************************
 void print_array(int num_rows, int num_cols, double *A)
 {
 	MatrixXd M(num_rows, num_cols);

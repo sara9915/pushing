@@ -17,6 +17,7 @@ struct thread_data{
     MatrixXd *_u_control;
     MatrixXd *_delta_uMPC;
     MatrixXd *_delta_xMPC;
+    double *_TimeGlobal;
 };
 #endif
 

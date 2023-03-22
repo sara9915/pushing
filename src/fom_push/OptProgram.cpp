@@ -21,15 +21,16 @@ void *rriMain(void *thread_arg)
     MatrixXd *pu_control = my_data->_u_control;
     MatrixXd *pdelta_uMPC = my_data->_delta_uMPC;
     MatrixXd *pdelta_xMPC = my_data->_delta_xMPC;
+    double *pTimeGlobal = my_data->_TimeGlobal;
 
     MatrixXd &q_slider = *pq_slider;
     MatrixXd &q_pusher = *pq_pusher;
     MatrixXd &u_control = *pu_control;
     MatrixXd &delta_uMPC = *pdelta_uMPC;
     MatrixXd &delta_xMPC = *pdelta_xMPC;
+    double &TimeGlobal = *pTimeGlobal;
 
     pthread_mutex_unlock(&nonBlockMutex);
-
 
     //~ //Define local variables
 
@@ -47,12 +48,13 @@ void *rriMain(void *thread_arg)
     MatrixXd fval(3, 1);       //[fval1 fval2 fval3]
     MatrixXd _q_slider_(3, 1); //[x y theta]
     MatrixXd _q_pusher_(2, 1); //[rx ry]
- 
+    double _TimeGlobal_ = 0.0;
+
     // Define object for 3 family of modes
     Push *pStick;
     Push *pUp;
     Push *pDown;
-    //std::cout << "defining Stick" << std::endl;
+    // std::cout << "defining Stick" << std::endl;
     pStick = new Push(1);
     pUp = new Push(2);
     pDown = new Push(3);
@@ -60,11 +62,14 @@ void *rriMain(void *thread_arg)
     Push &Up = *pUp;
     Push &Down = *pDown;
     int FlagStick;
-    //std::cout << "before loop" << std::endl;
+
+
+    // std::cout << "before loop" << std::endl;
 
     //**********************************************************************
     //************************ Begin Loop **********************************
     //**********************************************************************
+    ros::Rate loop(40);
     while (time < 50000 && ros::ok())
     {
         // std::cout << "loop control time: " << time << std::endl;
@@ -77,11 +82,12 @@ void *rriMain(void *thread_arg)
         pthread_mutex_lock(&nonBlockMutex);
         _q_slider_ = q_slider;
         _q_pusher_ = q_pusher;
+        _TimeGlobal_ = TimeGlobal;
         pthread_mutex_unlock(&nonBlockMutex);
         // Update Model
-        Stick.UpdateICModel(time, _q_slider_, _q_pusher_);
-        Down.UpdateICModel(time, _q_slider_, _q_pusher_);
-        Up.UpdateICModel(time, _q_slider_, _q_pusher_);
+        Stick.UpdateICModel(_TimeGlobal_, _q_slider_, _q_pusher_);
+        Down.UpdateICModel(_TimeGlobal_, _q_slider_, _q_pusher_);
+        Up.UpdateICModel(_TimeGlobal_, _q_slider_, _q_pusher_);
         // Optimize Models
         try
         {
@@ -125,17 +131,18 @@ void *rriMain(void *thread_arg)
             u_control = Up.delta_u;
             delta_uMPC = Up.solutionU;
             delta_xMPC = Up.solutionX;
-            // std::cout << " Sliding Up " << std::endl;
+            std::cout << " Sliding Up " << std::endl;
         }
         else
         {
             u_control = Down.delta_u;
             delta_uMPC = Down.solutionU;
             delta_xMPC = Down.solutionX;
-            // std::cout << " Sliding down " << std::endl;
+            std::cout << " Sliding down " << std::endl;
+            // std::cout << delta_uMPC << endl;
         }
-        // cout << "u_control" << endl;
-        // cout << u_control << endl;
+        std::cout << "u_control" << endl;
+        std::cout << u_control << endl;
 
         pthread_mutex_unlock(&nonBlockMutex);
 
@@ -144,6 +151,8 @@ void *rriMain(void *thread_arg)
         Up.RemoveConstraints();
         Down.RemoveConstraints();
         counter++;
+        // std::cout << "tempo loop: " << gettime() - time - t_ini<< std::endl;
+        loop.sleep();
     }
     //*********** End Loop **************************************************
     pthread_exit((void *)0);

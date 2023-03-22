@@ -18,9 +18,9 @@ Push::Push(int _Family) : // Constructor of Push Class  //peterkty: put the init
 
 	// Initialize scalars
 	a = 0.09;				  // length of slider [m]
-	b = a;					  // width of slider [m]
+	b = 0.075;				  // width of slider [m]
 	c_ls = 0.036742346141748; // c = mmax/fmax (CREATE FUNCTION TO CALCULATE IT)
-	h_opt = 0.03;			  // sample time [s] for optimization
+	h_opt = 0.025;			  // sample time [s] for optimization
 	rx = -a / 2.0;			  // point of contact
 	nu_p = 0.3;				  // coefficient of friction (pusher-slider)
 	Family = _Family;
@@ -38,7 +38,7 @@ Push::Push(int _Family) : // Constructor of Push Class  //peterkty: put the init
 void Push::ReadMatrices()
 {
 	// Load Json file
-	ifstream file("/home/workstation/dope_ros_ws/src/pushing/mpc_parameters/Matrices_copy.json", std::ifstream::binary);
+	ifstream file("/home/workstation/dope_ros_ws/src/pushing/mpc_parameters/Matrices_1.json", std::ifstream::binary);
 	Json::Value root;
 	file >> root;
 
@@ -46,18 +46,24 @@ void Push::ReadMatrices()
 	// std::string bin_string;
 	if (Family == 1)
 	{
+		std::cout << "----------- FAMILY 1 ----------------" << std::endl;
 		write_matrix_JSON(root["Matrices"]["Ain1"], Ain);
-		write_matrix_JSON(root["Matrices"]["bin1"], bin);
+		// write_matrix_JSON(root["Matrices"]["bin1"], bin);
+		write_matrix_JSON_index(root["Matrices"]["bin1"], bin, bin.rows(), bin.cols());
 	}
 	else if (Family == 2)
 	{
+		std::cout << "----------- FAMILY 2 ----------------" << std::endl;
 		write_matrix_JSON(root["Matrices"]["Ain2"], Ain);
-		write_matrix_JSON(root["Matrices"]["bin2"], bin);
+		// write_matrix_JSON(root["Matrices"]["bin2"], bin);
+		write_matrix_JSON_index(root["Matrices"]["bin2"], bin, bin.rows(), bin.cols());
 	}
 	else
 	{
+		std::cout << "----------- FAMILY 3 ----------------" << std::endl;
 		write_matrix_JSON(root["Matrices"]["Ain3"], Ain);
-		write_matrix_JSON(root["Matrices"]["bin3"], bin);
+		// write_matrix_JSON(root["Matrices"]["bin3"], bin);
+		write_matrix_JSON_index(root["Matrices"]["bin3"], bin, bin.rows(), bin.cols());
 	}
 	write_matrix_JSON(root["Matrices"]["Q"], Q);
 }
@@ -72,10 +78,41 @@ void Push::SetEquationSense()
 //*******************************************************************************************
 void Push::SetVariableType()
 {
-	for (int i = 0; i < NUM_VARIABLES; i++)
+	// for (int i = 0; i < NUM_VARIABLES; i++)
+	// {
+	// 	lb(i) = -10;
+	// 	ub(i) = 10;
+	// 	vtype[i] = 'C';
+	// }
+	for (int i = 0; i < NUM_UVARIABLES * NUM_STEPS; i++)
 	{
-		lb(i) = -10;
-		ub(i) = 10;
+		if (i % 2 == 0)
+		{
+			// normal velocity
+			lb(i) = -0.05 + 0.01;
+			ub(i) = -0.05 + 0.1;
+			vtype[i] = 'C';
+		}
+		else
+		{
+			// velocità tangenziale
+			lb(i) = -0.1;
+			ub(i) = +0.1;
+			vtype[i] = 'C';
+		}
+	}
+	for (int i = NUM_UVARIABLES * NUM_STEPS; i < NUM_VARIABLES; i++)
+	{
+		if ((i + 1 - NUM_UVARIABLES * NUM_STEPS) % 4 == 0)
+		{
+			lb(i) = -a / 2;
+			ub(i) = +a / 2;
+		}
+		else
+		{
+			lb(i) = -100;
+			ub(i) = 100;
+		}
 		vtype[i] = 'C';
 	}
 }
@@ -169,7 +206,8 @@ void Push::UpdateICModel(double time, MatrixXd q_slider, MatrixXd q_pusher)
 	// Find desired state
 	double FlagStick = 0;
 	MatrixXd x_des(4, 1);
-	x_des(0) = (time - 1) * 0.05;
+	// x_des(0) = (time - 1) * 0.05;
+	x_des(0) = time * 0.05 + 0.35;
 	x_des(1) = 0.0;
 	x_des(2) = 0;
 	x_des(3) = 0;
@@ -182,25 +220,29 @@ void Push::UpdateICModel(double time, MatrixXd q_slider, MatrixXd q_pusher)
 	double theta = q_slider(2);
 	double rx, ry;
 	Cbi << cos(theta), sin(theta), -sin(theta), cos(theta);
-	ripi << q_pusher(0), q_pusher(1);
-	ribi << q_slider(0), q_slider(1);
+	ripi << q_pusher(0), q_pusher(1); // pusher world-frame
+	ribi << q_slider(0), q_slider(1); // slider world-frame
 	ripb = ripi - ribi;
 	rbpb = Cbi * ripb;
 	// rx = rbpb(0);
 	rx = -a / 2;
-	ry = rbpb(1);
-	//printf("rx, ry: %f %f \n", rx, ry);
+	ry = rbpb(1) - 0.015;
+
 	// Find delta_x
 	MatrixXd delta_x(4, 1);
 	MatrixXd x_state(4, 1);
 	x_state << q_slider, ry;
+
 	delta_x = x_state - x_des;
+	// std::cout << "--------------------" << std::endl;
+	// printf("rx, ry: %f %f \n", rx, ry);
 	// cout << "delta_x" << endl;
 	// cout << delta_x << endl;
 	// cout << "q_slider" << endl;
 	// cout << q_slider << endl;
-	// // cout<< "rbpb"<<endl;
-	// cout << rbpb << endl;
+	// cout << "rbpb" << endl;
+	// cout << rbpb(0) << "\t" << rbpb(1) << endl;
+	// std::cout << "--------------------" << std::endl;
 
 	//----------------Find delta_x: Target Tracking-----------------------------------
 
