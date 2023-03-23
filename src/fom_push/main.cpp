@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
     geometry_msgs::Pose2D u_control_msg;
     geometry_msgs::Pose2D pusher_body_msg;
 
-    pushing::plane_command_Goal goal_plane_command;
+    pushing::plane_command_vel_Goal goal_plane_command;
 
     //-------------------------------------------------------------------------------------------------------------------------------
     // Check Tracker and Robot
@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
     //  return 0;
 
     // Create Action Client robot commands
-    actionlib::SimpleActionClient<pushing::plane_command_Action> plane_command_ac("plane_command_robot", true);
+    actionlib::SimpleActionClient<pushing::plane_command_vel_Action> plane_command_ac("plane_command_robot", true);
 
     // Create Thread------------------------------------------------------------------------------------------------------
     pthread_create(&rriThread, &attrR, rriMain, (void *)&thread_data_array[0]);
@@ -256,8 +256,8 @@ int main(int argc, char *argv[])
             vipi = Cbi.transpose() * vbpi; // inertial velocity
             // Euler integration with h sample time of 0.001
         }
-        x_tcp = x_tcp + h * vipi(0); // x robot position in base frame
-        y_tcp = y_tcp + h * vipi(1); // y robot position in base frame
+        // x_tcp = x_tcp + h * vipi(0); // x robot position in base frame
+        // y_tcp = y_tcp + h * vipi(1); // y robot position in base frame
 
         // std::cout << "--------------------" << std::endl;
         // std::cout << "x_tcp: " << x_tcp << std::endl;
@@ -271,8 +271,16 @@ int main(int argc, char *argv[])
         /********************************************************
          *            Calling plane command action server
          *********************************************************/
-        goal_plane_command.pusher_position.x = y_tcp;
-        goal_plane_command.pusher_position.y = -x_tcp;
+        goal_plane_command.pusher_vel.angular.x = 0.0;
+        goal_plane_command.pusher_vel.angular.y = 0.0;
+        goal_plane_command.pusher_vel.angular.z = 0.0;
+
+        goal_plane_command.pusher_vel.linear.x = vipi(1);
+        goal_plane_command.pusher_vel.linear.y = -vipi(0);
+        goal_plane_command.pusher_vel.linear.z = 0.0;
+
+        // goal_plane_command.pusher_position.x = y_tcp;
+        // goal_plane_command.pusher_position.y = -x_tcp;
         plane_command_ac.sendGoal(goal_plane_command);
 
         u_control_msg.x = vipi(0);

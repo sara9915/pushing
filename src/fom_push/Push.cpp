@@ -90,14 +90,14 @@ void Push::SetVariableType()
 		{
 			// normal velocity
 			lb(i) = -0.05 + 0.01;
-			ub(i) = -0.05 + 0.1;
+			ub(i) = -0.05 + 0.06;
 			vtype[i] = 'C';
 		}
 		else
 		{
 			// velocità tangenziale
-			lb(i) = -0.1;
-			ub(i) = +0.1;
+			lb(i) = -0.2;
+			ub(i) = +0.2;
 			vtype[i] = 'C';
 		}
 	}
@@ -207,7 +207,8 @@ void Push::UpdateICModel(double time, MatrixXd q_slider, MatrixXd q_pusher)
 	double FlagStick = 0;
 	MatrixXd x_des(4, 1);
 	// x_des(0) = (time - 1) * 0.05;
-	x_des(0) = time * 0.05 + 0.35;
+	x_des(0) = time * 0.005 + 0.35;
+	// std::cout << "time: "<< time << "\tx_des(0): " << x_des(0) << std::endl;
 	x_des(1) = 0.0;
 	x_des(2) = 0;
 	x_des(3) = 0;
@@ -236,8 +237,8 @@ void Push::UpdateICModel(double time, MatrixXd q_slider, MatrixXd q_pusher)
 	delta_x = x_state - x_des;
 	// std::cout << "--------------------" << std::endl;
 	// printf("rx, ry: %f %f \n", rx, ry);
-	// cout << "delta_x" << endl;
-	// cout << delta_x << endl;
+	cout << "delta_x" << endl;
+	cout << delta_x << endl;
 	// cout << "q_slider" << endl;
 	// cout << q_slider << endl;
 	// cout << "rbpb" << endl;

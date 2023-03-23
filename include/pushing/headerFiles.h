@@ -38,7 +38,7 @@
 #include "geometry_msgs/WrenchStamped.h"
 #include "geometry_msgs/Pose2D.h"
 #include "std_msgs/String.h"
-#include <pushing/plane_command_Action.h>
+#include <pushing/plane_command_vel_Action.h>
 #include <actionlib/client/simple_action_client.h>
 
 //Custom

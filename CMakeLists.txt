@@ -99,6 +99,7 @@ add_action_files(
   push_plan_action_.action
   push_as_action_.action
   plane_command_.action
+  plane_command_vel_.action
 )
 
 ## Generate added messages and services with any dependencies listed here
@@ -181,6 +182,7 @@ add_executable(push_as src/push_as.cpp)
 add_executable(demo_push_tracker src/demo_push_tracker.cpp)
 add_executable(converter_tracker_fom src/converter_tracker_fom.cpp)
 add_executable(plane_command_robot_as src/plane_command_robot_as.cpp)
+add_executable(plane_command_vel_as src/plane_command_vel_as.cpp)
 add_executable(push_control src/fom_push/main.cpp src/fom_push/OptProgram.cpp src/fom_push/helper.cpp src/fom_push/Push.cpp)
 
 ## Rename C++ executable without prefix
@@ -207,6 +209,9 @@ target_link_libraries(converter_tracker_fom
   ${catkin_LIBRARIES}
 )
 target_link_libraries(plane_command_robot_as
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(plane_command_vel_as
   ${catkin_LIBRARIES}
 )
 target_link_libraries(push_control

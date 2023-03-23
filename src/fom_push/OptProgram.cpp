@@ -85,6 +85,7 @@ void *rriMain(void *thread_arg)
         _TimeGlobal_ = TimeGlobal;
         pthread_mutex_unlock(&nonBlockMutex);
         // Update Model
+        // std::cout << _TimeGlobal_ << std::endl;
         Stick.UpdateICModel(_TimeGlobal_, _q_slider_, _q_pusher_);
         Down.UpdateICModel(_TimeGlobal_, _q_slider_, _q_pusher_);
         Up.UpdateICModel(_TimeGlobal_, _q_slider_, _q_pusher_);
