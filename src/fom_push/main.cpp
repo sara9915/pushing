@@ -156,11 +156,11 @@ int main(int argc, char *argv[])
     tf::TransformListener listener;
     ros::Subscriber mpc_pose_sub = n.subscribe<geometry_msgs::Pose2D>("/mpc_pose", 1, boost::bind(&getMPCPose, _1, &q_slider, &has_mpc_pose));
     ros::Publisher control_pub = n.advertise<geometry_msgs::Pose2D>("/u_control", 1);
+    ros::Publisher plane_command_pub = n.advertise<geometry_msgs::Twist>("/command_vel_des", 1);
     ros::Publisher pusher_body_pub = n.advertise<geometry_msgs::Pose2D>("/pusher_body", 1);
     geometry_msgs::Pose2D u_control_msg;
     geometry_msgs::Pose2D pusher_body_msg;
-
-    pushing::plane_command_vel_Goal goal_plane_command;
+    geometry_msgs::Twist plane_command;
 
     //-------------------------------------------------------------------------------------------------------------------------------
     // Check Tracker and Robot
@@ -271,20 +271,20 @@ int main(int argc, char *argv[])
         /********************************************************
          *            Calling plane command action server
          *********************************************************/
-        goal_plane_command.pusher_vel.angular.x = 0.0;
-        goal_plane_command.pusher_vel.angular.y = 0.0;
-        goal_plane_command.pusher_vel.angular.z = 0.0;
+        plane_command.angular.x = 0.0;
+        plane_command.angular.y = 0.0;
+        plane_command.angular.z = 0.0;
 
-        goal_plane_command.pusher_vel.linear.x = vipi(1);
-        goal_plane_command.pusher_vel.linear.y = -vipi(0);
-        goal_plane_command.pusher_vel.linear.z = 0.0;
+        plane_command.linear.x = vipi(1);
+        plane_command.linear.y = -vipi(0);
+        plane_command.linear.z = 0.0;
 
         // goal_plane_command.pusher_position.x = y_tcp;
         // goal_plane_command.pusher_position.y = -x_tcp;
-        plane_command_ac.sendGoal(goal_plane_command);
+        plane_command_pub.publish(plane_command);
 
-        u_control_msg.x = vipi(0);
-        u_control_msg.y = vipi(1);
+        u_control_msg.x = vbpi(0);
+        u_control_msg.y = vbpi(1);
         control_pub.publish(u_control_msg);
 
         ripi << q_pusher(0), q_pusher(1); // pusher world-frame

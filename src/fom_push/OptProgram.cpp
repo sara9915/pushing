@@ -117,15 +117,21 @@ void *rriMain(void *thread_arg)
         // Find best control input
         fval << fval1, fval2, fval3;
         min = fval.minCoeff(&minIndex, &maxCol);
+        if(abs(fval(minIndex) - fval1) < 0.01)
+        {
+            minIndex = 0;
+            min = fval(minIndex);
+        }
         // Assign new control input to shared variables
         pthread_mutex_lock(&nonBlockMutex);
+        // minIndex = 0;
 
         if (minIndex == 0)
         {
             u_control = Stick.delta_u;
             delta_uMPC = Stick.solutionU;
             delta_xMPC = Stick.solutionX;
-            // std::cout << " Sticking " << std::endl;
+            std::cout << " Sticking " << std::endl;
         }
         else if (minIndex == 1)
         {
@@ -140,10 +146,9 @@ void *rriMain(void *thread_arg)
             delta_uMPC = Down.solutionU;
             delta_xMPC = Down.solutionX;
             std::cout << " Sliding down " << std::endl;
-            // std::cout << delta_uMPC << endl;
         }
-        std::cout << "u_control" << endl;
-        std::cout << u_control << endl;
+        // std::cout << "u_control" << endl;
+        // std::cout << u_control << endl;
 
         pthread_mutex_unlock(&nonBlockMutex);
 

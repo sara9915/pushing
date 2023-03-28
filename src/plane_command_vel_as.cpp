@@ -35,26 +35,33 @@ void read_joint_values(const sensor_msgs::JointState::ConstPtr &msg, const movei
 
 void executeCB(const pushing::plane_command_vel_GoalConstPtr &goal, actionlib::SimpleActionServer<pushing::plane_command_vel_Action> *as, ros::NodeHandle *nh, const moveit::core::JointModelGroup *joint_model_group, moveit::core::RobotStatePtr &kinematic_state, ros::Publisher *joint_cmd_pub, ros::Publisher *cart_cmd_pub)
 {
+    ros::Time start(ros::Time::now().toSec());
+    ros::Time t0(ros::Time::now().toSec());
+    auto t = t0 - start;
     pushing::plane_command_vel_Feedback feedback_;
     pushing::plane_command_vel_Result result_;
     Eigen::Matrix<double, 6, 1> vipi;
     vipi << goal->pusher_vel.linear.x, goal->pusher_vel.linear.y, goal->pusher_vel.linear.z, goal->pusher_vel.angular.x, goal->pusher_vel.angular.y, goal->pusher_vel.angular.z; // desired pusher velocity in world frame
+    vipi = vipi *10;
     Eigen::VectorXd q_dot;
     Eigen::VectorXd q;
     bool success = true;
-    ros::Rate loop(50);
+    ros::Rate loop(40);
     double euler_frequency = 40; // [Hz]
     double euler_sample_time = 1 / euler_frequency;
-
-    // Reading robot configuration q0
-    Eigen::VectorXd joint_values;
-    kinematic_state->copyJointGroupPositions(joint_model_group, joint_values);
 
     // get Jacobian
     ROS_INFO_STREAM("vipi: \n"
                     << vipi);
     Eigen::MatrixXd jacobian;
-    Eigen::Vector3d reference_point_position(0.0, 0.0, 0.0);  
+    Eigen::Vector3d reference_point_position(0.0, 0.0, 0.0);
+    // while (t.sec < 15)
+    // {
+    // ros::Time t0(ros::Time::now().toSec());
+    // t = t0 - start;
+    // Reading robot configuration q0
+    Eigen::VectorXd joint_values;
+    kinematic_state->copyJointGroupPositions(joint_model_group, joint_values);
     if (kinematic_state->getJacobian(joint_model_group, kinematic_state->getLinkModel(joint_model_group->getLinkModelNames().back()), reference_point_position, jacobian))
     {
         // Eigen::MatrixXd jacobian_xyz = jacobian.block(0,0,2,jacobian.cols());
@@ -83,7 +90,7 @@ void executeCB(const pushing::plane_command_vel_GoalConstPtr &goal, actionlib::S
             }
 
             ROS_INFO_STREAM("Joints value: \n"
-                            << joint_values);// * 180 / M_PI);
+                            << joint_values); // * 180 / M_PI);
 
             for (std::size_t i = 0; i < q.size(); ++i)
             {
@@ -106,18 +113,22 @@ void executeCB(const pushing::plane_command_vel_GoalConstPtr &goal, actionlib::S
         ROS_ERROR("Error calculating Jacobian");
         success = false;
     }
+    //     loop.sleep();
+    // }
 
     result_.success = success;
     ROS_INFO("Plane Command Action Server terminated with: %d", success);
     // set the action state to succeeded
     as->setSucceeded(result_);
+    ros::Time end(ros::Time::now().toSec());
+    ROS_INFO_STREAM(end - start);
 }
 
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "plane_command_vel_as");
     ros::NodeHandle nh;
-    ros::AsyncSpinner spinner(1);
+    ros::AsyncSpinner spinner(0);
     spinner.start();
 
     static const std::string PLANNING_GROUP = "yaskawa_arm";

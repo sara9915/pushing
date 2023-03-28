@@ -182,7 +182,7 @@ add_executable(push_as src/push_as.cpp)
 add_executable(demo_push_tracker src/demo_push_tracker.cpp)
 add_executable(converter_tracker_fom src/converter_tracker_fom.cpp)
 add_executable(plane_command_robot_as src/plane_command_robot_as.cpp)
-add_executable(plane_command_vel_as src/plane_command_vel_as.cpp)
+add_executable(command_vel_pos src/command_vel_pos.cpp)
 add_executable(push_control src/fom_push/main.cpp src/fom_push/OptProgram.cpp src/fom_push/helper.cpp src/fom_push/Push.cpp)
 
 ## Rename C++ executable without prefix
@@ -211,7 +211,7 @@ target_link_libraries(converter_tracker_fom
 target_link_libraries(plane_command_robot_as
   ${catkin_LIBRARIES}
 )
-target_link_libraries(plane_command_vel_as
+target_link_libraries(command_vel_pos
   ${catkin_LIBRARIES}
 )
 target_link_libraries(push_control

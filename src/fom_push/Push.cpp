@@ -22,7 +22,7 @@ Push::Push(int _Family) : // Constructor of Push Class  //peterkty: put the init
 	c_ls = 0.036742346141748; // c = mmax/fmax (CREATE FUNCTION TO CALCULATE IT)
 	h_opt = 0.025;			  // sample time [s] for optimization
 	rx = -a / 2.0;			  // point of contact
-	nu_p = 0.3;				  // coefficient of friction (pusher-slider)
+	nu_p = 0.1951;				  // coefficient of friction (pusher-slider)
 	Family = _Family;
 
 	ReadMatrices();
@@ -90,14 +90,14 @@ void Push::SetVariableType()
 		{
 			// normal velocity
 			lb(i) = -0.05 + 0.01;
-			ub(i) = -0.05 + 0.06;
+			ub(i) = -0.05 + 0.1;
 			vtype[i] = 'C';
 		}
 		else
 		{
 			// velocità tangenziale
-			lb(i) = -0.2;
-			ub(i) = +0.2;
+			lb(i) = -0.1;
+			ub(i) = +0.1;
 			vtype[i] = 'C';
 		}
 	}
@@ -207,7 +207,7 @@ void Push::UpdateICModel(double time, MatrixXd q_slider, MatrixXd q_pusher)
 	double FlagStick = 0;
 	MatrixXd x_des(4, 1);
 	// x_des(0) = (time - 1) * 0.05;
-	x_des(0) = time * 0.005 + 0.35;
+	x_des(0) = time * 0.05 + 0.35;
 	// std::cout << "time: "<< time << "\tx_des(0): " << x_des(0) << std::endl;
 	x_des(1) = 0.0;
 	x_des(2) = 0;
@@ -237,8 +237,8 @@ void Push::UpdateICModel(double time, MatrixXd q_slider, MatrixXd q_pusher)
 	delta_x = x_state - x_des;
 	// std::cout << "--------------------" << std::endl;
 	// printf("rx, ry: %f %f \n", rx, ry);
-	cout << "delta_x" << endl;
-	cout << delta_x << endl;
+	// cout << "delta_x" << endl;
+	// cout << delta_x << endl;
 	// cout << "q_slider" << endl;
 	// cout << q_slider << endl;
 	// cout << "rbpb" << endl;
