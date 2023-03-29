@@ -31,6 +31,7 @@ public:
 	MatrixXd delta_u;
 	MatrixXd solutionU;
 	MatrixXd solutionX;
+	Eigen::Vector2d u_star;
 	// 2d Arrays
 	// 1d Arrays
 	char sense[NUM_CONSTRAINTS];

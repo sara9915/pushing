@@ -63,6 +63,8 @@ void *rriMain(void *thread_arg)
     Push &Down = *pDown;
     int FlagStick;
 
+    int index_old = -1;
+    double factor_pref = 0.001;
 
     // std::cout << "before loop" << std::endl;
 
@@ -116,12 +118,25 @@ void *rriMain(void *thread_arg)
         }
         // Find best control input
         fval << fval1, fval2, fval3;
-        min = fval.minCoeff(&minIndex, &maxCol);
-        if(abs(fval(minIndex) - fval1) < 0.01)
+
+        //LAST PRIVILEGED
+        if(index_old != -1)
         {
-            minIndex = 0;
-            min = fval(minIndex);
+            fval(index_old) = fval(index_old) - factor_pref;
         }
+          
+        
+        min = fval.minCoeff(&minIndex, &maxCol);
+        index_old = minIndex;
+
+        //FORCED STICKING
+        // if(abs(fval(minIndex) - fval1) < 0.01)
+        // {
+        //     minIndex = 0;
+        //     min = fval(minIndex);
+        // }
+
+
         // Assign new control input to shared variables
         pthread_mutex_lock(&nonBlockMutex);
         // minIndex = 0;

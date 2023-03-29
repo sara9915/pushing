@@ -132,6 +132,7 @@ int main(int argc, char *argv[])
     double tmp_slider = 0.0;
     double tmp_pusher = 0.0;
     double _TimeGlobal = 0.0;
+    Eigen::Vector2d u_star; u_star << 0.01, 0;
 
     // Booleans
     bool has_robot = false;
@@ -226,21 +227,10 @@ int main(int argc, char *argv[])
         TimeGlobal = time;
         x_tcp = q_pusher(0);
         y_tcp = q_pusher(1);
-        // if (i == 0)
-        // {
-        //     x_tcp = q_pusher(0);
-        //     y_tcp = q_pusher(1);
-        // }
 
         pthread_mutex_unlock(&nonBlockMutex);
 
         // Position Control Parameters --------------------------------------------------------------------------------------------------
-        // if (time <= 0.7)
-        // {
-        //     x_tcp = x_tcp;
-        // }
-        // else
-        // {
         if (x_tcp > 0.55 or Flag == 3)
         {
             vipi(0) = 0;
@@ -251,13 +241,11 @@ int main(int argc, char *argv[])
             // Convert u_control from body to intertial reference frame
             theta = _q_slider(2);
             Cbi << cos(theta), sin(theta), -sin(theta), cos(theta);
-            vbpi(0) = _u_control(0) * 1 + 0.05 * 1;
-            vbpi(1) = _u_control(1) * 1;   // body velocity
+            vbpi(0) = _u_control(0) + u_star(0);
+            vbpi(1) = _u_control(1);   // body velocity
             vipi = Cbi.transpose() * vbpi; // inertial velocity
             // Euler integration with h sample time of 0.001
         }
-        // x_tcp = x_tcp + h * vipi(0); // x robot position in base frame
-        // y_tcp = y_tcp + h * vipi(1); // y robot position in base frame
 
         // std::cout << "--------------------" << std::endl;
         // std::cout << "x_tcp: " << x_tcp << std::endl;
@@ -266,7 +254,7 @@ int main(int argc, char *argv[])
         // std::cout << "--------------------" << std::endl;
 
         // updateJson(_x_tcp, _y_tcp, x_tcp, y_tcp, _q_slider, _u_control, _delta_uMPC, _delta_xMPC, vipi);
-        // }
+
 
         /********************************************************
          *            Calling plane command action server
@@ -278,9 +266,6 @@ int main(int argc, char *argv[])
         plane_command.linear.x = vipi(1);
         plane_command.linear.y = -vipi(0);
         plane_command.linear.z = 0.0;
-
-        // goal_plane_command.pusher_position.x = y_tcp;
-        // goal_plane_command.pusher_position.y = -x_tcp;
         plane_command_pub.publish(plane_command);
 
         u_control_msg.x = vbpi(0);
@@ -291,7 +276,6 @@ int main(int argc, char *argv[])
         ribi << q_slider(0), q_slider(1); // slider world-frame
         ripb = ripi - ribi;
         rbpb = Cbi * ripb;
-        // rx = rbpb(0);
         rx = -0.09 / 2;
         ry = rbpb(1)-0.015;
 
