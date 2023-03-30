@@ -22,7 +22,7 @@ Push::Push(int _Family) : // Constructor of Push Class  //peterkty: put the init
 	c_ls = 0.036742346141748; // c = mmax/fmax (CREATE FUNCTION TO CALCULATE IT)
 	h_opt = 0.025;			  // sample time [s] for optimization
 	rx = -a / 2.0;			  // point of contact
-	nu_p = 0.1951;			  // coefficient of friction (pusher-slider)
+	nu_p = 0.6; //0.1951;			  // coefficient of friction (pusher-slider)
 	u_star << 0.01, 0;
 	Family = _Family;
 
@@ -97,8 +97,8 @@ void Push::SetVariableType()
 		else
 		{
 			// velocità tangenziale
-			lb(i) = u_star(1) - 0.02; //-0.1;
-			ub(i) = u_star(1) + 0.02; //+0.1;
+			lb(i) = u_star(1) - 0.01; //-0.1;
+			ub(i) = u_star(1) + 0.01; //+0.1;
 			vtype[i] = 'C';
 		}
 	}
