@@ -69,6 +69,7 @@
   <exec_depend>visp_tracking</exec_depend>
   <depend>actionlib_msgs</depend>
   <depend>grasp_dope</depend>
+  <depend>tf_conversions</depend>
 
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>

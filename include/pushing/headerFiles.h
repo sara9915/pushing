@@ -40,6 +40,7 @@
 #include "std_msgs/String.h"
 #include <pushing/plane_command_vel_Action.h>
 #include <actionlib/client/simple_action_client.h>
+#include <tf_conversions/tf_eigen.h>
 
 //Custom
 #include "Push.h"

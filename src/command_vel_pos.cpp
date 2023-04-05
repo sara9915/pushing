@@ -5,6 +5,7 @@
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
+#include <geometry_msgs/TwistStamped.h>
 #include <std_srvs/SetBool.h>
 
 // MoveIt
@@ -74,11 +75,19 @@ int main(int argc, char **argv)
     ros::Subscriber vel_sub = nh.subscribe<geometry_msgs::Twist>("/command_vel_des", 1, boost::bind(&update_vel, _1, &vipi));
     ros::Publisher joint_cmd_pub = nh.advertise<sensor_msgs::JointState>("/motoman/joint_ll_control", 1);
     ros::Publisher cart_cmd_pub = nh.advertise<geometry_msgs::PoseStamped>("/cartesian_control", 1);
+    ros::Publisher command_vl_pub = nh.advertise<geometry_msgs::TwistStamped>("/cmd_vel", 1);
+
+    geometry_msgs::TwistStamped cmd_vel_msg;
     
 
     while (ros::ok() && activate_srv)
     {
         ros::spinOnce();
+        cmd_vel_msg.header.stamp = ros::Time::now();
+        cmd_vel_msg.twist.linear.x = vipi(0);
+        cmd_vel_msg.twist.linear.y = vipi(1);
+        cmd_vel_msg.twist.linear.z = vipi(2);
+        command_vl_pub.publish(cmd_vel_msg);
         ros::Time start(ros::Time::now().toSec());
         ros::Time t0(ros::Time::now().toSec());
         auto t = t0 - start;

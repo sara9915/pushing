@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   sensor_msgs
   message_generation
+  tf_conversions
 )
 
 ## System dependencies are found with CMake's conventions
@@ -183,6 +184,7 @@ add_executable(demo_push_tracker src/demo_push_tracker.cpp)
 add_executable(converter_tracker_fom src/converter_tracker_fom.cpp)
 add_executable(plane_command_robot_as src/plane_command_robot_as.cpp)
 add_executable(command_vel_pos src/command_vel_pos.cpp)
+add_executable(delay_estimation src/delay_estimation.cpp)
 add_executable(push_control src/fom_push/main.cpp src/fom_push/OptProgram.cpp src/fom_push/helper.cpp src/fom_push/Push.cpp)
 
 ## Rename C++ executable without prefix
@@ -220,6 +222,9 @@ target_link_libraries(push_control
   libjsoncpp.a
   # ${GUROBI_CXX_LIBRARY}
   # ${GUROBI_LIBRARY}
+)
+target_link_libraries(delay_estimation
+  ${catkin_LIBRARIES}
 )
 
 #############

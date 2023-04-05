@@ -125,8 +125,8 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
         success = false;
         return success;
     }
-
-    Eigen::Quaterniond q_pose_obj_ref(goal->pose_obj_ref.pose.orientation.x, goal->pose_obj_ref.pose.orientation.y, goal->pose_obj_ref.pose.orientation.z, goal->pose_obj_ref.pose.orientation.w);
+    
+    Eigen::Quaterniond q_pose_obj_ref(goal->pose_obj_ref.pose.orientation.w, goal->pose_obj_ref.pose.orientation.x, goal->pose_obj_ref.pose.orientation.y, goal->pose_obj_ref.pose.orientation.z);
     Eigen::Matrix3d rot_pose_obj_ref;
     rot_pose_obj_ref = q_pose_obj_ref.toRotationMatrix();
 
@@ -156,7 +156,7 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
     std::cout << "value to enter in if: " << rot_pose_obj_ref(1,1) << std::endl;
 
 
-    if (rot_pose_obj_ref(1, 1) > 0)
+    if (rot_pose_obj_ref(1, 1) < 0)
     {
         push_pose.pose.position.y = push_pose.pose.position.y + cad_dims.at(0);
     }
