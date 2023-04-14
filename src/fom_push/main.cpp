@@ -1,5 +1,6 @@
 //~ //System
 #include "pushing/headerFiles.h"
+#include "pushing/debugger.h"
 
 // Define shortcuts
 using namespace tf;
@@ -69,7 +70,7 @@ bool getRobotPose(MatrixXd &q_pusher, tf::TransformListener &listener, tf::Stamp
     tf::StampedTransform T_PB;
     try
     {
-        listener.waitForTransform("/base_link", "/push_frame", ros::Time(0), ros::Duration(3.0));
+        listener.waitForTransform("/base_link", "/push_frame", ros::Time(0), ros::Duration(0.1));
         listener.lookupTransform("/base_link", "/push_frame",
                                  ros::Time(0), T_PB);
     }
@@ -105,26 +106,59 @@ int main(int argc, char *argv[])
     pthread_attr_setdetachstate(&attrR, PTHREAD_CREATE_JOINABLE);
 
     // Matrices
-    MatrixXd q_pusher(2, 1); // rx ry
+    MatrixXd x_sim(5, 1);
+    x_sim.setZero(5, 1);
+    MatrixXd q_pusher(2, 1);
+    q_pusher.setZero(2, 1); // rx ry
     MatrixXd _q_pusher_sensor(2, 1);
-    MatrixXd q_slider(3, 1); // x y theta
+    _q_pusher_sensor.setZero(2, 1);
+    MatrixXd q_slider(3, 1);
+    q_slider.setZero(3, 1); // x y theta
     MatrixXd q_slider_init(3, 1);
-    MatrixXd u_control(2, 1); // vn vt
+    q_slider_init.setZero(3, 1);
+    MatrixXd u_control(2, 1);
+    u_control.setZero(2, 1); // vn vt
+
+    MatrixXd u_control_sd(2, 1);
+    u_control_sd.setZero(2, 1); // vn vt
+    MatrixXd u_control_su(2, 1);
+    u_control_su.setZero(2, 1); // vn vt
+    MatrixXd u_control_st(2, 1);
+    u_control_st.setZero(2, 1); // vn vt
+    MatrixXd _u_control_sd(2, 1);
+    u_control_sd.setZero(2, 1); // vn vt
+    MatrixXd _u_control_su(2, 1);
+    u_control_su.setZero(2, 1); // vn vt
+    MatrixXd _u_control_st(2, 1);
+    u_control_st.setZero(2, 1); // vn vt
+
     MatrixXd delta_uMPC(2, NUM_STEPS);
+    delta_uMPC.setZero(2, NUM_STEPS);
     MatrixXd delta_xMPC(4, NUM_STEPS);
+    delta_xMPC.setZero(4, NUM_STEPS);
     MatrixXd _q_pusher(2, 1);
+    _q_pusher.setZero(2, 1);
     MatrixXd _q_slider(3, 1);
+    _q_slider.setZero(3, 1);
+    MatrixXd _x_sim(5, 1);
+    _x_sim.setZero(5, 1);
     MatrixXd _u_control(2, 1);
+    _u_control.setZero(2, 1);
     MatrixXd _delta_uMPC(2 * NUM_STEPS, 1);
+    _delta_uMPC.setZero(2 * NUM_STEPS, 1);
     MatrixXd _delta_xMPC(4 * NUM_STEPS, 1);
+    _delta_xMPC.setZero(4 * NUM_STEPS, 1);
     MatrixXd vipi(2, 1);
+    vipi.setZero(2, 1);
     MatrixXd vbpi(2, 1);
+    vbpi.setZero(2, 1);
     MatrixXd Cbi(2, 2);
+    Cbi.setZero(2, 2);
 
     Eigen::Isometry3d transf_base_slid0;
     Eigen::Isometry3d transf_slid0_base;
-    Eigen::Vector3d vel_pusher_inertial;
-    Eigen::Vector3d vel_pusher_base;
+    Eigen::Vector3d vel_pusher_inertial(0.0, 0.0, 0.0);
+    Eigen::Vector3d vel_pusher_base(0.0, 0.0, 0.0);
 
     // Integers
     int tmp = 0;
@@ -137,7 +171,7 @@ int main(int argc, char *argv[])
     double theta;
     double control_rate = 40; // Hz
     double h = 1.0f / control_rate;
-    double exp_time = 150;    //[s]
+    double exp_time = 150; //[s]
     double _TimeGlobal = 0.0;
     Eigen::Vector2d u_star;
     u_star << 0.01, 0;
@@ -151,14 +185,24 @@ int main(int argc, char *argv[])
     thread_data_array[0]._q_pusher = &q_pusher;
     thread_data_array[0]._q_slider = &q_slider;
     thread_data_array[0]._u_control = &u_control;
+
+    thread_data_array[0]._u_control_st = &u_control_st;
+    thread_data_array[0]._u_control_sd = &u_control_sd;
+    thread_data_array[0]._u_control_su = &u_control_su;
+
     thread_data_array[0]._delta_uMPC = &delta_uMPC;
     thread_data_array[0]._delta_xMPC = &delta_xMPC;
     thread_data_array[0]._TimeGlobal = &TimeGlobal;
+    thread_data_array[0]._x_sim = &x_sim;
 
     MatrixXd ripi(2, 1);
+    ripi.setZero(2, 1);
     MatrixXd ribi(2, 1);
+    ribi.setZero(2, 1);
     MatrixXd ripb(2, 1);
+    ripb.setZero(2, 1);
     MatrixXd rbpb(2, 1);
+    rbpb.setZero(2, 1);
     double rx, ry;
 
     // Subscriber
@@ -167,6 +211,7 @@ int main(int argc, char *argv[])
     ros::Publisher control_pub = n.advertise<geometry_msgs::Pose2D>("/u_control", 1);
     ros::Publisher plane_command_pub = n.advertise<geometry_msgs::Twist>("/command_vel_des", 1);
     ros::Publisher pusher_body_pub = n.advertise<geometry_msgs::Pose2D>("/pusher_body", 1);
+    ros::Publisher debugger_pub = n.advertise<pushing::debugger>("/debugger", 1);
     geometry_msgs::Pose2D u_control_msg;
     geometry_msgs::Pose2D pusher_body_msg;
     geometry_msgs::Twist plane_command;
@@ -249,7 +294,10 @@ int main(int argc, char *argv[])
         TimeGlobal = time;
         x_tcp = q_pusher(0);
         y_tcp = q_pusher(1);
-
+        _x_sim = x_sim;
+        _u_control_sd = u_control_sd;
+        _u_control_su = u_control_su;
+        _u_control_st = u_control_st;
         pthread_mutex_unlock(&nonBlockMutex);
 
         // Position Control Parameters --------------------------------------------------------------------------------------------------
@@ -281,8 +329,10 @@ int main(int argc, char *argv[])
          *********************************************************/
         tf::transformTFToEigen(T_BS0, transf_base_slid0);
         transf_slid0_base = transf_base_slid0.inverse();
-        vel_pusher_inertial << vipi, 0;
+
+        vel_pusher_inertial << vipi, 0.0;
         vel_pusher_base = transf_slid0_base.rotation() * vel_pusher_inertial;
+
         plane_command.angular.x = 0.0;
         plane_command.angular.y = 0.0;
         plane_command.angular.z = 0.0;
@@ -296,19 +346,36 @@ int main(int argc, char *argv[])
         u_control_msg.y = vbpi(1);
         control_pub.publish(u_control_msg);
 
-        ripi << q_pusher(0), q_pusher(1); // pusher world-frame
-        // std::cout << "ripi: " << ripi << std::endl;
-        ribi << q_slider(0), q_slider(1); // slider world-frame
-        // std::cout << "ribi: " << ribi << std::endl;
+        ripi << _q_pusher(0), _q_pusher(1); // pusher world-frame
+        ribi << _q_slider(0), _q_slider(1); // slider world-frame
+
         ripb = ripi - ribi;
         rbpb = Cbi * ripb;
         rx = rbpb(0); //-0.082 / 2;
         ry = rbpb(1) - 0.005;
+        std::cout << "Main: " << ry << std::endl;
 
         pusher_body_msg.x = rx;
         pusher_body_msg.y = ry;
         pusher_body_pub.publish(pusher_body_msg);
 
+        // DEBUG PUBLISHER
+        pushing::debugger debugger_msgs;
+        debugger_msgs.mpc_pose.x = x_sim(0);
+        debugger_msgs.mpc_pose.y = x_sim(1);
+        debugger_msgs.mpc_pose.theta = x_sim(2);
+        debugger_msgs.pusher_body.x = x_sim(3);
+        debugger_msgs.pusher_body.y = x_sim(4);
+        debugger_msgs.u_control.linear.x = vbpi(0);
+        debugger_msgs.u_control.linear.y = vbpi(1);
+        debugger_msgs.u_control_st.linear.x = _u_control_st(0);
+        debugger_msgs.u_control_st.linear.y = _u_control_st(1);
+        debugger_msgs.u_control_su.linear.x = _u_control_su(0);
+        debugger_msgs.u_control_su.linear.y = _u_control_su(1);
+        debugger_msgs.u_control_sd.linear.x = _u_control_sd(0);
+        debugger_msgs.u_control_sd.linear.y = _u_control_sd(1);
+
+        debugger_pub.publish(debugger_msgs);
         r.sleep();
     }
 

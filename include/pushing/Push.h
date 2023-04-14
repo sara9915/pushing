@@ -86,5 +86,7 @@ public:
 	double OptimizeModel();
 	void UpdateICModel(double time, MatrixXd q_slider, MatrixXd q_pusher);
 	void RemoveConstraints();
+	Eigen::MatrixXd dx_funct(MatrixXd q_slider, MatrixXd q_pusher, MatrixXd u_sim);
+	MatrixXd MotionCone(double rx, double ry, MatrixXd vbpi);
 };
 #endif

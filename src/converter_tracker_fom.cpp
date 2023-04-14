@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
     Eigen::Isometry3d TT1_0_B_;
     Eigen::Vector3d rpw_tracker;
 
-    ros::Rate loop_rate_2(40);
+    ros::Rate loop_rate_2(80);
     tf::TransformListener listener;
 
     // Initial 2D pose
@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
         tracker_cam_pose.pose.orientation.z = q_T1B.z();
         tracker_cam_pose_pub.publish(tracker_cam_pose);
 
-        if (first || i < 10)
+        if (first || i < 100)
         {
 
             Eigen::Quaterniond qT1B_p(TT1B.rotation());

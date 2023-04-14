@@ -39,7 +39,7 @@ Push::Push(int _Family) : // Constructor of Push Class  //peterkty: put the init
 void Push::ReadMatrices()
 {
 	// Load Json file
-	ifstream file("/home/workstation/dope_ros_ws/src/pushing/mpc_parameters/Matrices_1.json", std::ifstream::binary);
+	ifstream file("/home/workstation/dope_ros_ws/src/pushing/mpc_parameters/Matrices_01theta.json", std::ifstream::binary);
 	Json::Value root;
 	file >> root;
 
@@ -91,7 +91,7 @@ void Push::SetVariableType()
 		{
 			// normal velocity
 			lb(i) = -u_star(0) + 0.001; //-0.05 + 0.01;
-			ub(i) = -u_star(0) + 0.02; //-0.05 + 0.1;
+			ub(i) = -u_star(0) + 0.02;	//-0.05 + 0.1;
 			vtype[i] = 'C';
 		}
 		else
@@ -106,8 +106,8 @@ void Push::SetVariableType()
 	{
 		if ((i + 1 - NUM_UVARIABLES * NUM_STEPS) % 4 == 0)
 		{
-			lb(i) = -0.025;//-0.98 * b / 2;
-			ub(i) = 0.025;//0.98 * b / 2;
+			lb(i) = -0.75 * (b / 2);
+			ub(i) = 0.75 * (b / 2);
 		}
 		else
 		{
@@ -242,8 +242,8 @@ void Push::UpdateICModel(double time, MatrixXd q_slider, MatrixXd q_pusher)
 	// cout << delta_x << endl;
 	// cout << "q_slider" << endl;
 	// cout << q_slider << endl;
-	// cout << "rbpb" << endl;
-	// cout << rbpb(0) << "\t" << rbpb(1) << endl;
+	cout << "rbpb" << endl;
+	cout << rbpb(0) << "\t" << ry << endl;
 	// std::cout << "--------------------" << std::endl;
 
 	//----------------Add IC constraints-----------------------------------
@@ -280,8 +280,9 @@ void Push::UpdateICModel(double time, MatrixXd q_slider, MatrixXd q_pusher)
 	MatrixXd bin2(1, 1);
 
 	f_star1 << 0.0100, 0, 0, 0; // f1(x_star(t0),u_star(t0)) as in (8)
-	f_star2 << 0.0100, 0.0070, -0.2561, -0.0175;
-	f_star3 << 0.0100, -0.0070, 0.2561, 0.0175;
+	f_star2 << 0.0100, 0.0020, -0.0714, -0.049;
+	f_star3 << 0.0100, -0.0020, 0.0714, 0.049;
+
 
 	B1(0, 0) = (cos(theta) * 2.801666666666667E-3) / (ry * ry + 2.801666666666667E-3) + (ry * sin(theta) * (4.1E1 / 1.0E3)) / (ry * ry + 2.801666666666667E-3);
 	B1(0, 1) = -(sin(theta) * (ry * ry + 1.120666666666667E-3)) / (ry * ry + 2.801666666666667E-3) - (ry * cos(theta) * (4.1E1 / 1.0E3)) / (ry * ry + 2.801666666666667E-3);
@@ -388,4 +389,89 @@ void Push::RemoveConstraints()
 	{
 		model.remove(constrIC[i]);
 	}
+}
+
+Eigen::MatrixXd Push::dx_funct(MatrixXd q_slider, MatrixXd q_pusher, MatrixXd u_sim)
+{
+	MatrixXd ripi(2, 1);
+	MatrixXd ribi(2, 1);
+	MatrixXd rbbi(2, 1);
+	MatrixXd ripb(2, 1);
+	MatrixXd rbpb(2, 1);
+	MatrixXd Cbi(2, 2);
+	MatrixXd x_state(4, 1);
+	MatrixXd vo(2, 1);
+	MatrixXd twist(3, 1);
+
+	double theta = q_slider(2);
+	double rx, ry, vpx, vpy, vx, vy, dtheta;
+
+	Cbi << cos(theta), sin(theta), -sin(theta), cos(theta);
+	ripi << q_pusher(0), q_pusher(1); // pusher world-frame
+	ribi << q_slider(0), q_slider(1); // slider world-frame
+	ripb = ripi - ribi;
+	rbpb = Cbi * ripb;
+	rx = -a / 2;
+	ry = rbpb(1) - 0.005;
+
+	vo = MotionCone(rx, ry, u_sim + u_star);
+
+	vpx = vo(0);
+	vpy = vo(1);
+	// Compute derivative : In body frame
+	vx = ((c_ls * c_ls + rx * rx) * vpx + rx * ry * vpy) / (c_ls * c_ls + rx * rx + ry * ry);
+	vy = ((c_ls * c_ls + ry * ry) * vpy + rx * ry * vpx) / (c_ls * c_ls + rx * rx + ry * ry);
+	dtheta = (rx * vy - ry * vx) / (c_ls * c_ls);
+	// Build output vector
+	twist << vx, vy, dtheta;
+	return twist;
+}
+
+MatrixXd Push::MotionCone(double rx, double ry, MatrixXd vbpi)
+{
+	// Compute friction cone vectors
+	double gamma_top = (nu_p * c_ls * c_ls - rx * ry + nu_p * rx * rx) / (c_ls * c_ls + ry * ry - nu_p * rx * ry);
+	double gamma_bottom = (-nu_p * c_ls * c_ls - rx * ry - nu_p * rx * rx) / (c_ls * c_ls + ry * ry + nu_p * rx * ry);
+	double gamma = 0.0;
+	double kappa = 0.0;
+	Eigen::Vector2d vMC(0, 0);
+	Eigen::MatrixXd vo(2, 1);
+	try
+	{
+		gamma = vbpi(1) / vbpi(0);
+	}
+	catch (...)
+	{
+		if (vbpi(1) > 0)
+			gamma = 1000000;
+		else
+			gamma = -1000000;
+	};
+
+	if (gamma > gamma_top)
+	{
+		// Sliding Up
+		vMC << 1, gamma_top;
+		kappa = (vbpi(0)) / (vMC(0));
+		vo = kappa * vMC;
+	}
+	if (gamma < gamma_bottom)
+	{
+		vMC << 1, gamma_bottom;
+		kappa = (vbpi(0)) / (vMC(0));
+		vo = kappa * vMC;
+		// Sliding Down
+	}
+	else
+	{
+		vo = vbpi;
+		// Sticking
+	}
+	if (vo(0) <= 0)
+	{
+		vo << 0, 0;
+		// not in contact
+	}
+
+	return vo;
 }
