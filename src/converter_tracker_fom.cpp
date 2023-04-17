@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
     Eigen::Isometry3d TT1_0_B_;
     Eigen::Vector3d rpw_tracker;
 
-    ros::Rate loop_rate_2(80);
+    ros::Rate loop_rate_2(1.0/0.05);
     tf::TransformListener listener;
 
     // Initial 2D pose
@@ -99,12 +99,12 @@ int main(int argc, char *argv[])
         // Transform TTB in inertial frame for mpc pushing
         // First change cad frame rotating it (ONLY FOR BANANA, it depends on the cad frame)
         Eigen::Matrix3d rotation_T1_T;
-        // rotation_T1_T << 0, 0, 1,
-        //     1, 0, 0,
-        //     0, 1, 0;
-        rotation_T1_T << 1, 0, 0,
-            0, 1, 0,
+        rotation_T1_T << 0, 1, 0,
+            -1, 0, 0,
             0, 0, 1;
+        // rotation_T1_T << 1, 0, 0,
+        //     0, 1, 0,
+        //     0, 0, 1;
         Eigen::Quaterniond qT1_T(rotation_T1_T);
         Eigen::Isometry3d TT1_T(qT1_T); // homogenous matrix from tracker to camera color optical frame
         TT1_T.translation().x() = 0;

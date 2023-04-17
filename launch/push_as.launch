@@ -3,8 +3,8 @@
         <param name="use_edges" type="bool" value="true"/>
         <param name="use_klt" type="bool" value="true"/>
         <param name="use_depth" type="bool" value="false"/>
-        <param name="model_color" value="banana2_centered_46_88_vrt_fc"/>
+        <param name="model_color" value="santal_ace"/>
         <param name="extension_file" value=".wrl"/>
-        <param name="folder_file" type="string" value="/home/workstation/dope_ros_ws/src/visp_tracking/src/generic-rgbd/model/banana_6/source/banana/46_88/"/>
+        <param name="folder_file" type="string" value="/home/workstation/dope_ros_ws/src/visp_tracking/src/generic-rgbd/model/santal_ace/"/>
     </node>
 </launch>

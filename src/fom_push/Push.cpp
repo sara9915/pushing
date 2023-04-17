@@ -39,7 +39,7 @@ Push::Push(int _Family) : // Constructor of Push Class  //peterkty: put the init
 void Push::ReadMatrices()
 {
 	// Load Json file
-	ifstream file("/home/workstation/dope_ros_ws/src/pushing/mpc_parameters/Matrices_01theta.json", std::ifstream::binary);
+	ifstream file("/home/workstation/dope_ros_ws/src/pushing/mpc_parameters/Matrices_1.json", std::ifstream::binary);
 	Json::Value root;
 	file >> root;
 
@@ -242,8 +242,8 @@ void Push::UpdateICModel(double time, MatrixXd q_slider, MatrixXd q_pusher)
 	// cout << delta_x << endl;
 	// cout << "q_slider" << endl;
 	// cout << q_slider << endl;
-	cout << "rbpb" << endl;
-	cout << rbpb(0) << "\t" << ry << endl;
+	// cout << "rbpb" << endl;
+	// cout << rbpb(0) << "\t" << ry << endl;
 	// std::cout << "--------------------" << std::endl;
 
 	//----------------Add IC constraints-----------------------------------
@@ -280,8 +280,8 @@ void Push::UpdateICModel(double time, MatrixXd q_slider, MatrixXd q_pusher)
 	MatrixXd bin2(1, 1);
 
 	f_star1 << 0.0100, 0, 0, 0; // f1(x_star(t0),u_star(t0)) as in (8)
-	f_star2 << 0.0100, 0.0020, -0.0714, -0.049;
-	f_star3 << 0.0100, -0.0020, 0.0714, 0.049;
+	f_star2 << 0.0100, 0.0070, -0.2561, -0.0175;
+	f_star3 << 0.0100, -0.0070, 0.2561, 0.0175;
 
 
 	B1(0, 0) = (cos(theta) * 2.801666666666667E-3) / (ry * ry + 2.801666666666667E-3) + (ry * sin(theta) * (4.1E1 / 1.0E3)) / (ry * ry + 2.801666666666667E-3);

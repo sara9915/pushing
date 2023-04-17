@@ -96,7 +96,7 @@ void *rriMain(void *thread_arg)
     int FlagStick;
 
     int index_old = -1;
-    double factor_pref = 0.0; //0.0020; // 0.001;
+    double factor_pref = 0.002; //0.0020; // 0.001;
 
     // std::cout << "before loop" << std::endl;
 

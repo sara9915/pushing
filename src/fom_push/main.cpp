@@ -232,6 +232,8 @@ int main(int argc, char *argv[])
         return false;
     }
 
+    std::cout << "T_BS0: " << T_BS0.getOrigin().x() << std::endl;
+
     std::cout << "Check tracker and robot state..." << std::endl;
     ros::Rate read_mpc_pose_rate(100);
     while (!has_robot && ros::ok())
@@ -252,8 +254,6 @@ int main(int argc, char *argv[])
     std::cout << q_slider << endl;
     //  return 0;
 
-    // Create Action Client robot commands
-    actionlib::SimpleActionClient<pushing::plane_command_vel_Action> plane_command_ac("plane_command_robot", true);
 
     // Create Thread------------------------------------------------------------------------------------------------------
     pthread_create(&rriThread, &attrR, rriMain, (void *)&thread_data_array[0]);
@@ -353,7 +353,7 @@ int main(int argc, char *argv[])
         rbpb = Cbi * ripb;
         rx = rbpb(0); //-0.082 / 2;
         ry = rbpb(1) - 0.005;
-        std::cout << "Main: " << ry << std::endl;
+        // std::cout << "Main: " << ry << std::endl;
 
         pusher_body_msg.x = rx;
         pusher_body_msg.y = ry;

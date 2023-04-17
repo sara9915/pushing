@@ -156,10 +156,9 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
     std::cout << "value to enter in if: " << rot_pose_obj_ref(1,1) << std::endl;
 
 
-    if (rot_pose_obj_ref(1, 1) < 0)
-    {
-        push_pose.pose.position.y = push_pose.pose.position.y + cad_dims.at(0);
-    }
+    push_pose.pose.position.y = push_pose.pose.position.y + cad_dims.at(1)/2; // hard coded for experiments 
+
+
     push_pose.pose.orientation.w = q_PB.w();
     push_pose.pose.orientation.x = q_PB.x();
     push_pose.pose.orientation.y = q_PB.y();
@@ -256,7 +255,7 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
 
         goal_tracker.use_depth = use_depth;
         goal_tracker.use_edges = use_edges;
-        goal_tracker.use_ktl = use_depth;
+        goal_tracker.use_ktl = use_klt;
         goal_tracker.path_wrl = folder_file + model_color + extension_file;
         goal_tracker.initial_pose = tracker_init_pose;
 
