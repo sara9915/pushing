@@ -21,6 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   message_generation
   tf_conversions
+  sun_wsg50_driver
 )
 
 ## System dependencies are found with CMake's conventions
@@ -143,7 +144,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES pushing
-   CATKIN_DEPENDS moveit_ros_planning_interface grasp_dope roscpp tf2 tf2_ros visp_tracking message_runtime actionlib_msgs geometry_msgs std_msgs
+   CATKIN_DEPENDS moveit_ros_planning_interface grasp_dope roscpp tf2 tf2_ros visp_tracking message_runtime actionlib_msgs geometry_msgs std_msgs sun_wsg50_driver
 #  DEPENDS system_lib
 )
 
@@ -185,6 +186,7 @@ add_executable(plane_command_robot_as src/plane_command_robot_as.cpp)
 add_executable(command_vel_pos src/command_vel_pos.cpp)
 add_executable(delay_estimation src/delay_estimation.cpp)
 add_executable(push_control src/fom_push/main.cpp src/fom_push/OptProgram.cpp src/fom_push/helper.cpp src/fom_push/Push.cpp)
+add_executable(post_push_plan src/post_push_plan.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -223,6 +225,10 @@ target_link_libraries(push_control
   # ${GUROBI_LIBRARY}
 )
 target_link_libraries(delay_estimation
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(post_push_plan
   ${catkin_LIBRARIES}
 )
 

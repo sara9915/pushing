@@ -70,7 +70,7 @@
   <depend>actionlib_msgs</depend>
   <depend>grasp_dope</depend>
   <depend>tf_conversions</depend>
-
+  <depend>sun_wsg50_driver</depend>
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
 

@@ -5,9 +5,6 @@
 #include <tf/transform_listener.h>
 #include <geometry_msgs/Transform.h>
 
-#include <pushing/push_plan_action_Action.h>
-#include <actionlib/server/simple_action_server.h>
-
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 
@@ -60,51 +57,6 @@ auto planning_cartesian(const geometry_msgs::Pose &target_pose, moveit::planning
         success = 1;
 
     return trajectory;
-}
-
-auto get_tool_pose(const geometry_msgs::Pose &pose)
-{
-    tf::TransformListener listener;
-    tf::StampedTransform transform;
-
-    try
-    {
-        listener.waitForTransform("/push_frame", "/tool0", ros::Time(0), ros::Duration(3.0));
-        listener.lookupTransform("/push_frame", "/tool0",
-                                 ros::Time(0), transform);
-    }
-    catch (tf::TransformException ex)
-    {
-        ROS_ERROR("%s", ex.what());
-        ros::Duration(1.0).sleep();
-    }
-
-    Eigen::Quaterniond q_TP(transform.getRotation().getW(), transform.getRotation().getX(), transform.getRotation().getY(), transform.getRotation().getZ());
-    Eigen::Isometry3d T_TP(q_TP); // omogeneous transfrom from tool0 to push_frame
-    T_TP.translation().x() = transform.getOrigin().getX();
-    T_TP.translation().y() = transform.getOrigin().getY();
-    T_TP.translation().z() = transform.getOrigin().getZ();
-
-    Eigen::Quaterniond q_PB(pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z);
-    Eigen::Isometry3d T_PB(q_PB);
-    T_PB.translation().x() = pose.position.x;
-    T_PB.translation().y() = pose.position.y;
-    T_PB.translation().z() = pose.position.z;
-
-    Eigen::Isometry3d T_TB(T_PB * T_TP);
-
-    geometry_msgs::Pose start_state_pose;
-    Eigen::Quaterniond start_state_quat(T_TB.rotation());
-    start_state_pose.orientation.w = start_state_quat.w();
-    start_state_pose.orientation.x = start_state_quat.x();
-    start_state_pose.orientation.y = start_state_quat.y();
-    start_state_pose.orientation.z = start_state_quat.z();
-
-    start_state_pose.position.x = T_TB.translation().x();
-    start_state_pose.position.y = T_TB.translation().y();
-    start_state_pose.position.z = T_TB.translation().z();
-
-    return start_state_pose;
 }
 
 void execute_trajectory(const moveit_msgs::RobotTrajectory &my_plan, ros::NodeHandle &nh, bool scale)
@@ -179,130 +131,83 @@ void execute_trajectory(const moveit_msgs::RobotTrajectory &my_plan, ros::NodeHa
     }
 }
 
-bool executeCB(const pushing::push_plan_action_GoalConstPtr &goal, actionlib::SimpleActionServer<pushing::push_plan_action_Action> *as, ros::NodeHandle *nh, moveit::planning_interface::MoveGroupInterface *move_group_interface, moveit::planning_interface::PlanningSceneInterface *planning_scene_interface, const moveit::core::JointModelGroup *joint_model_group, moveit::core::RobotStatePtr &kinematic_state)
+auto get_tool_pose(const geometry_msgs::Pose &pose)
 {
-    // create messages that are used to published feedback/result
-    pushing::push_plan_action_Feedback feedback;
-    pushing::push_plan_action_Result result;
+    tf::TransformListener listener;
+    tf::StampedTransform transform;
 
-    geometry_msgs::Pose pre_push;
-    geometry_msgs::Pose push = goal->push_pose.pose;
-    geometry_msgs::Pose post_push;
-
-    // moveit::core::RobotState start_state(*move_group_interface->getCurrentState());
-
-    moveit::planning_interface::MoveGroupInterface::Plan plan_pre_push;
-    moveit_msgs::RobotTrajectory plan_push;
-    moveit_msgs::RobotTrajectory plan_post_push;
-
-    moveit::planning_interface::MoveGroupInterface::Plan plan_homing;
-
-    ros::NodeHandle temp;
-    ros::Publisher push_pub = temp.advertise<geometry_msgs::PoseStamped>("/push_pose", 1);
-
-    pre_push = push;
-    pre_push.position.z = pre_push.position.z + 0.10;
-    // pre_push.position.y = pre_push.position.y + 0.05;
-    post_push = pre_push;
-
-    int i = 0;
-    ros::Rate loop_rate(1);
-    geometry_msgs::PoseStamped pre_push_stamped;
-    pre_push_stamped.pose = pre_push;
-    pre_push_stamped.header.frame_id = "base_link";
-    pre_push_stamped.header.stamp = ros::Time::now();
-
-    ROS_INFO_STREAM("--- pre_push pose --- "
-                    << "\n"
-                    << pre_push);
-
-    if (as->isPreemptRequested() || !ros::ok())
+    try
     {
-        ROS_INFO("Preempted");
-        as->setPreempted();
-        success = false;
-        return success;
+        listener.waitForTransform("/push_frame", "/tool0", ros::Time(0), ros::Duration(3.0));
+        listener.lookupTransform("/push_frame", "/tool0",
+                                 ros::Time(0), transform);
+    }
+    catch (tf::TransformException ex)
+    {
+        ROS_ERROR("%s", ex.what());
+        ros::Duration(1.0).sleep();
     }
 
-    /* Planning to pre-grasp pose */
+    Eigen::Quaterniond q_TP(transform.getRotation().getW(), transform.getRotation().getX(), transform.getRotation().getY(), transform.getRotation().getZ());
+    Eigen::Isometry3d T_TP(q_TP); // omogeneous transfrom from tool0 to push_frame
+    T_TP.translation().x() = transform.getOrigin().getX();
+    T_TP.translation().y() = transform.getOrigin().getY();
+    T_TP.translation().z() = transform.getOrigin().getZ();
 
-    moveit::core::RobotState start_state(*move_group_interface->getCurrentState());
-    move_group_interface->setStartState(start_state);
+    Eigen::Quaterniond q_PB(pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z);
+    Eigen::Isometry3d T_PB(q_PB);
+    T_PB.translation().x() = pose.position.x;
+    T_PB.translation().y() = pose.position.y;
+    T_PB.translation().z() = pose.position.z;
 
-    plan_pre_push = planning_joint(get_tool_pose(pre_push), *move_group_interface);
+    Eigen::Isometry3d T_TB(T_PB * T_TP);
 
-    ROS_INFO_STREAM("Result planning pre-push pose: " << success);
+    geometry_msgs::Pose start_state_pose;
+    Eigen::Quaterniond start_state_quat(T_TB.rotation());
+    start_state_pose.orientation.w = start_state_quat.w();
+    start_state_pose.orientation.x = start_state_quat.x();
+    start_state_pose.orientation.y = start_state_quat.y();
+    start_state_pose.orientation.z = start_state_quat.z();
 
-    if (success)
+    start_state_pose.position.x = T_TB.translation().x();
+    start_state_pose.position.y = T_TB.translation().y();
+    start_state_pose.position.z = T_TB.translation().z();
+
+    return start_state_pose;
+}
+
+bool get_current_pose(geometry_msgs::Pose &pose)
+{
+    tf::TransformListener listener;
+    tf::StampedTransform transform;
+    try
     {
-        std::cout << "Press Enter to Continue";
-        std::cin.ignore();
-        push.position.z = push.position.z + 0.01;
-        push.position.y = push.position.y + 0.002;
-        while (i < 10)
-        {
-            push_pub.publish(goal->push_pose);
-            i++;
-            loop_rate.sleep();
-        }
-        i = 0;
-
-        ROS_INFO_STREAM("--- Push pose ---"
-                        << "\n"
-                        << push);
-
-        /* Planning to grasp pose */
-        // start_state.setFromIK(joint_model_group, get_tool_pose(pre_push));
-        start_state.setJointGroupPositions(joint_model_group, plan_pre_push.trajectory_.joint_trajectory.points.back().positions);
-        move_group_interface->setStartState(start_state);
-
-        plan_push = planning_cartesian(get_tool_pose(push), *move_group_interface);
-
-        ROS_INFO_STREAM("Result planning push pose: " << success);
-
-        if (success)
-        {
-            std::cout << "Press Enter to Continue";
-            std::cin.ignore();
-
-            success_planning_pp = true;
-        }
-        else
-        {
-            ROS_INFO_STREAM("Planning failed...");
-        }
+        listener.waitForTransform("/base_link", "/push_frame", ros::Time(0), ros::Duration(0.1));
+        listener.lookupTransform("/base_link", "/push_frame",
+                                 ros::Time(0), transform);
     }
-    else
+    catch (tf::TransformException ex)
     {
-        ROS_INFO_STREAM("Planning failed...");
+        ROS_ERROR("%s", ex.what());
+        ros::Duration(1.0).sleep();
+        return false;
     }
 
-    if (success_planning_pp)
-    {
-        std::cout << "Press Enter to start executing";
-        std::cin.ignore();
-        ROS_INFO_STREAM("Executing trajectory pre_push...");
-        execute_trajectory(plan_pre_push.trajectory_, *nh, false);
+    pose.position.x = transform.getOrigin().x();
+    pose.position.y = transform.getOrigin().y();
+    pose.position.z = transform.getOrigin().z();
 
-        std::cout << "Press Enter to Continue";
-        std::cin.ignore();
+    pose.orientation.w = transform.getRotation().w();
+    pose.orientation.x = transform.getRotation().x();
+    pose.orientation.y = transform.getRotation().y();
+    pose.orientation.z = transform.getRotation().z();
 
-        ROS_INFO_STREAM("Executing trajectory push...");
-        execute_trajectory(plan_push, *nh, true);
-        std::cout << "Press Enter to Continue";
-        std::cin.ignore();
-    }
-
-    result.success = success;
-    as->setSucceeded(result);
-    bool success_homing = false;
-    success_planning_pp = false;
     return true;
 }
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "pushing_plan");
+    ros::init(argc, argv, "post_push_plan");
     ros::NodeHandle nh;
 
     ros::AsyncSpinner spinner(0);
@@ -346,11 +251,85 @@ int main(int argc, char **argv)
         ROS_INFO_STREAM(element);
     }
 
-    /* Creazione del ros action */
-    actionlib::SimpleActionServer<pushing::push_plan_action_Action> as(nh, "pushing_planner", boost::bind(&executeCB, _1, &as, &nh, &move_group_interface, &planning_scene_interface, joint_model_group, kinematic_state), false); // NodeHandle instance must be created before this line. Otherwise strange error occurs.
-    as.start();
+    /********************** PLANNING TO POST PUSH ***************************************/
+    std::cout << "Press Enter to Plan Post Push";
+    std::cin.ignore();
+
+    std::cout << "Press Enter to Clear Octopmap";
+    std::cin.ignore();
+
+    /* Clear octomap to start planning */
+    ros::service::waitForService("/clear_octomap");
+    std_srvs::Empty::Request req;
+    std_srvs::Empty::Response res;
+    if (!ros::service::call<std_srvs::Empty::Request, std_srvs::Empty::Response>("/clear_octomap", req, res))
+    {
+        ROS_INFO_STREAM("Error activating service clear_octomap...");
+        return -1;
+    }
+
+    std::cout << "Press Enter to close gripper";
+    std::cin.ignore();
+
+    /********************************************************
+     *            Close gripper
+     *********************************************************/
+
+    ROS_INFO_STREAM("--- OPENING GRIPPER ---");
+
+    ros::service::waitForService("/homing");
+    std_srvs::Empty::Request req_home;
+    req_home = {};
+    std_srvs::Empty::Response res_home;
+    if (!ros::service::call<std_srvs::Empty::Request, std_srvs::Empty::Response>("/homing", req_home, res_home))
+    {
+        ROS_INFO_STREAM("Error activating service move gripper...");
+        return -1;
+    }
+
+    std::cout << "Press Enter to Plan Post Push";
+    std::cin.ignore();
+
+    moveit_msgs::RobotTrajectory plan_post_push;
+    moveit::planning_interface::MoveGroupInterface::Plan plan_homing;
+    bool success_homing = false;
+
+    move_group_interface.setMaxVelocityScalingFactor(0.05);
+    move_group_interface.setMaxAccelerationScalingFactor(0.05);
+    move_group_interface.setStartStateToCurrentState();
+
+    geometry_msgs::Pose post_push;
+    geometry_msgs::Pose current_pose;
+    get_current_pose(current_pose);
+    std::cout << current_pose << std::endl;
+
+    post_push = current_pose;
+    post_push.position.z = post_push.position.z + 0.10;
+    std::cout << post_push << std::endl;
+    plan_post_push = planning_cartesian(get_tool_pose(post_push), move_group_interface);
+    if (success)
+    {
+        std::cout << "Press Enter to Continue";
+        std::cin.ignore();
+        execute_trajectory(plan_post_push, nh, true);
+        std::cout << "Press Enter to Continue";
+        std::cin.ignore();
+        move_group_interface.setStartStateToCurrentState();
+        move_group_interface.setJointValueTarget(homing);
+
+        success_homing = (move_group_interface.plan(plan_homing) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+        if (success_homing)
+        {
+            std::cout << "Press Enter to return Home";
+            std::cin.ignore();
+            execute_trajectory(plan_homing.trajectory_, nh, false);
+        }
+    }
+    else
+    {
+        ROS_INFO_STREAM("Error planning");
+    }
 
     ros::waitForShutdown();
-
     return 0;
 }

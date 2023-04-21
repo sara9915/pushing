@@ -4,6 +4,8 @@
 #include <geometry_msgs/Transform.h>
 #include <eigen3/Eigen/Geometry>
 
+#include <sun_wsg50_common/Move.h>
+
 #include <pushing/push_as_action_Action.h>
 #include <pushing/push_plan_action_Action.h>
 #include <actionlib/server/simple_action_server.h>
@@ -125,7 +127,7 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
         success = false;
         return success;
     }
-    
+
     Eigen::Quaterniond q_pose_obj_ref(goal->pose_obj_ref.pose.orientation.w, goal->pose_obj_ref.pose.orientation.x, goal->pose_obj_ref.pose.orientation.y, goal->pose_obj_ref.pose.orientation.z);
     Eigen::Matrix3d rot_pose_obj_ref;
     rot_pose_obj_ref = q_pose_obj_ref.toRotationMatrix();
@@ -137,8 +139,9 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
     cad_dims.resize(3);
     ros::param::get(cad_string, cad_dims);
     ROS_INFO_STREAM(cad_dims.at(0) << ", " << cad_dims.at(1) << ", " << cad_dims.at(2));
-    
-    for(int c = 0; c < 3; c++) cad_dims.at(c) = cad_dims.at(c) * 0.01 * goal->scale_obj;
+
+    for (int c = 0; c < 3; c++)
+        cad_dims.at(c) = cad_dims.at(c) * 0.01 * goal->scale_obj;
     Eigen::Matrix3d rotation_PB;
     rotation_PB << 1, 0, 0,
         0, 0, -1,
@@ -153,11 +156,9 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
     push_pose.header.stamp = ros::Time::now();
     push_pose.header.frame_id = "base_link";
     push_pose.pose.position = goal->pose_obj_ref.pose.position;
-    std::cout << "value to enter in if: " << rot_pose_obj_ref(1,1) << std::endl;
+    std::cout << "value to enter in if: " << rot_pose_obj_ref(1, 1) << std::endl;
 
-
-    push_pose.pose.position.y = push_pose.pose.position.y + cad_dims.at(1)/2; // hard coded for experiments 
-
+    push_pose.pose.position.y = push_pose.pose.position.y + cad_dims.at(1) / 2; // hard coded for experiments
 
     push_pose.pose.orientation.w = q_PB.w();
     push_pose.pose.orientation.x = q_PB.x();
@@ -174,6 +175,23 @@ bool executeCB(const pushing::push_as_action_GoalConstPtr &goal, actionlib::Simp
     T_O1C.translation().x() = o1c_pose.pose.position.x;
     T_O1C.translation().y() = o1c_pose.pose.position.y;
     T_O1C.translation().z() = o1c_pose.pose.position.z;
+
+    /********************************************************
+     *            Close gripper
+     *********************************************************/
+    ROS_INFO_STREAM("--- CLOSING GRIPPER ---");
+    ros::service::waitForService("/move");
+    sun_wsg50_common::Move::Request req;
+    sun_wsg50_common::Move::Response res;
+
+    req.width = 10.0;
+    req.speed = 10.0;
+
+    if (!ros::service::call<sun_wsg50_common::Move::Request, sun_wsg50_common::Move::Response>("/move", req, res))
+    {
+        ROS_INFO_STREAM("Error activating service move gripper...");
+        return -1;
+    }
 
     /********************************************************
      *            Calling push plan action server
