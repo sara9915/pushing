@@ -182,6 +182,7 @@ add_executable(push_plan src/push_plan.cpp)
 add_executable(push_as src/push_as.cpp)
 add_executable(demo_push_tracker src/demo_push_tracker.cpp)
 add_executable(converter_tracker_fom src/converter_tracker_fom.cpp)
+add_executable(get_mpc_state src/get_mpc_state.cpp)
 add_executable(plane_command_robot_as src/plane_command_robot_as.cpp)
 add_executable(command_vel_pos src/command_vel_pos.cpp)
 add_executable(delay_estimation src/delay_estimation.cpp)
@@ -209,6 +210,9 @@ target_link_libraries(demo_push_tracker
   ${catkin_LIBRARIES}
 )
 target_link_libraries(converter_tracker_fom
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(get_mpc_state
   ${catkin_LIBRARIES}
 )
 target_link_libraries(plane_command_robot_as
