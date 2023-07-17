@@ -73,14 +73,19 @@ int main(int argc, char *argv[])
         // Read tracker pose in world frame through tf
         try
         {
-            listener.waitForTransform("/base_link", "/camera_color_optical_frame", ros::Time(0), ros::Duration(10.0));
+            // listener.waitForTransform("/base_link", "/camera_color_optical_frame", ros::Time(0), ros::Duration(10.0));
+            // listener.lookupTransform("/base_link", "/camera_color_optical_frame",
+            //                          ros::Time(0), transform);
+            listener.waitForTransform("/base_link", "/camera_color_optical_frame", tracker_pose.header.stamp, ros::Duration(0.5));
             listener.lookupTransform("/base_link", "/camera_color_optical_frame",
-                                     ros::Time(0), transform);
+                                     tracker_pose.header.stamp, transform);
         }
         catch (tf::TransformException ex)
         {
             ROS_ERROR("%s", ex.what());
         }
+
+        std::cout << "------DIFF: " << (transform.stamp_ - tracker_pose.header.stamp) << "\n";
 
         ////homogenous matriz from camera color optical frame to base link
         Eigen::Quaterniond qCB(transform.getRotation().getW(), transform.getRotation().getX(), transform.getRotation().getY(), transform.getRotation().getZ());
@@ -99,8 +104,8 @@ int main(int argc, char *argv[])
         // Transform TTB in inertial frame for mpc pushing
         // First change cad frame rotating it (ONLY FOR BANANA, it depends on the cad frame)
         Eigen::Matrix3d rotation_T1_T;
-        rotation_T1_T << 0, 1, 0,
-            -1, 0, 0,
+        rotation_T1_T << 0, -1, 0,
+            1, 0, 0,
             0, 0, 1;
         // rotation_T1_T << 1, 0, 0,
         //     0, 1, 0,

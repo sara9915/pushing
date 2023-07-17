@@ -245,7 +245,7 @@ int main(int argc, char **argv)
 
     kinematic_state->setJointGroupPositions(joint_model_group, joints_values);
     homing = move_group_interface.getCurrentJointValues();
-
+    ROS_INFO_STREAM("homing: ");
     for (auto element : move_group_interface.getCurrentJointValues())
     {
         ROS_INFO_STREAM(element);
