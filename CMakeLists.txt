@@ -179,15 +179,25 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(push_plan src/push_plan.cpp)
+add_dependencies(push_plan ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_executable(push_as src/push_as.cpp)
+add_dependencies(push_as ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_executable(demo_push_tracker src/demo_push_tracker.cpp)
+add_dependencies(demo_push_tracker ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_executable(converter_tracker_fom src/converter_tracker_fom.cpp)
+add_dependencies(converter_tracker_fom ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_executable(get_mpc_state src/get_mpc_state.cpp)
+add_dependencies(get_mpc_state ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_executable(plane_command_robot_as src/plane_command_robot_as.cpp)
+add_dependencies(plane_command_robot_as ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_executable(command_vel_pos src/command_vel_pos.cpp)
+add_dependencies(command_vel_pos ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_executable(delay_estimation src/delay_estimation.cpp)
+add_dependencies(delay_estimation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_executable(push_control src/fom_push/main.cpp src/fom_push/OptProgram.cpp src/fom_push/helper.cpp src/fom_push/Push.cpp)
+add_dependencies(push_control ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_executable(post_push_plan src/post_push_plan.cpp)
+add_dependencies(post_push_plan ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

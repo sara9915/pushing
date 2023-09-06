@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
     tf::Transform T_PS0; // homogenous matrix from pusher to slider0
     Eigen::Vector3d rpw_tracker;
 
-    ros::Rate loop_rate_2(1.0/0.05);
+    ros::Rate loop_rate_2(1.0/0.07);
     tf::TransformListener listener;
 
     // Initial 2D pose
@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
             ROS_ERROR("%s", ex.what());
         }
 
-        std::cout << "------DIFF: " << (transform.stamp_ - tracker_pose.header.stamp) << "\n";
+        // std::cout << "------DIFF: " << (transform.stamp_ - tracker_pose.header.stamp) << "\n";
 
         ////homogenous matriz from camera color optical frame to base link
         Eigen::Quaterniond qCB(transform.getRotation().getW(), transform.getRotation().getX(), transform.getRotation().getY(), transform.getRotation().getZ());
